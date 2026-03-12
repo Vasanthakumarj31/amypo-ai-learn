@@ -143,63 +143,30 @@ const seedProblems: Problem[] = [
   },
 ];
 
-const seedStudents: Student[] = [
-  { id: "s1", name: "Aarav Sharma", email: "aarav@student.com", avatar: "AS", joinedAt: daysAgo(25) },
-  { id: "s2", name: "Priya Nair", email: "priya@student.com", avatar: "PN", joinedAt: daysAgo(23) },
-  { id: "s3", name: "Rahul Kumar", email: "rahul@student.com", avatar: "RK", joinedAt: daysAgo(22) },
-  { id: "s4", name: "Sneha Patel", email: "sneha@student.com", avatar: "SP", joinedAt: daysAgo(20) },
-  { id: "s5", name: "Karan Mehta", email: "karan@student.com", avatar: "KM", joinedAt: daysAgo(18) },
-];
-
-function makeSubmissions(): Submission[] {
-  const submissions: Submission[] = [];
-  const problemTopicScores: Record<string, Record<string, number>> = {
-    s1: { HTML: 85, CSS: 70, JavaScript: 90 },
-    s2: { HTML: 95, CSS: 80, JavaScript: 55 },
-    s3: { HTML: 60, CSS: 90, JavaScript: 75 },
-    s4: { HTML: 80, CSS: 65, JavaScript: 85 },
-    s5: { HTML: 70, CSS: 85, JavaScript: 60 },
-  };
-
-  seedProblems.forEach((problem, pi) => {
-    seedStudents.forEach((student) => {
-      // Not every student submits every problem
-      if (Math.random() > 0.15) {
-        const baseScore = problemTopicScores[student.id][problem.topic];
-        const variance = Math.floor(Math.random() * 20) - 10;
-        const score = Math.min(100, Math.max(0, baseScore + variance));
-        const d = new Date();
-        d.setDate(d.getDate() - (seedProblems.length - pi) + Math.floor(Math.random() * 3));
-        submissions.push({
-          id: uid(),
-          studentId: student.id,
-          problemId: problem.id,
-          htmlCode: problem.starterHtml + "\n<!-- Student implementation -->",
-          cssCode: problem.starterCss + "\n/* Student styles */",
-          jsCode: problem.starterJs + "\n// Student code",
-          score,
-          isCorrect: score >= 70,
-          submittedAt: d.toISOString(),
-          timeSpent: 10 + Math.floor(Math.random() * 40),
-        });
-      }
-    });
-  });
-  return submissions;
-}
-
 // ─── Seed ─────────────────────────────────────────────────────────────────────
 export function seedIfNeeded() {
+  // Only seed example problems (trainer templates) — never fake students/submissions.
   if (!localStorage.getItem(PROBLEMS_KEY)) {
     localStorage.setItem(PROBLEMS_KEY, JSON.stringify(seedProblems));
   }
-  if (!localStorage.getItem(STUDENTS_KEY)) {
-    localStorage.setItem(STUDENTS_KEY, JSON.stringify(seedStudents));
+
+  // Actively clear any previously seeded fake students & submissions.
+  const hadFakeStudents = (() => {
+    try {
+      const s = JSON.parse(localStorage.getItem(STUDENTS_KEY) || "[]") as Student[];
+      return s.some((x) => x.id.startsWith("s") && Number(x.id.slice(1)) <= 10);
+    } catch { return false; }
+  })();
+  if (hadFakeStudents) {
+    localStorage.removeItem(STUDENTS_KEY);
+    localStorage.removeItem(SUBMISSIONS_KEY);
   }
-  if (!localStorage.getItem(SUBMISSIONS_KEY)) {
-    localStorage.setItem(SUBMISSIONS_KEY, JSON.stringify(makeSubmissions()));
-  }
+
+  // Initialise collections to empty arrays if not yet present.
+  if (!localStorage.getItem(STUDENTS_KEY))   localStorage.setItem(STUDENTS_KEY,   "[]");
+  if (!localStorage.getItem(SUBMISSIONS_KEY)) localStorage.setItem(SUBMISSIONS_KEY, "[]");
 }
+
 
 // ─── CRUD – Problems ──────────────────────────────────────────────────────────
 export function getProblems(): Problem[] {

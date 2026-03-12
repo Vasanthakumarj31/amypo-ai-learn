@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { motion } from "framer-motion";
+import { BarChart2 } from "lucide-react";
 import {
   BarChart,
   Bar,
@@ -61,15 +62,22 @@ const ChartCard = ({ title, children, delay = 0 }: { title: string; children: Re
   </motion.div>
 );
 
+const tooltipStyle = {
+  contentStyle: {
+    background: "hsl(var(--card))",
+    border: "1px solid hsl(var(--border))",
+    borderRadius: "8px",
+    color: "hsl(var(--foreground))",
+  },
+};
+
 const AnalyticsPanel = () => {
   const submissions = useMemo(() => getSubmissions(), []);
-  const problems = useMemo(() => getProblems(), []);
-  const topicAvg = useMemo(() => avgScoreByTopic(), []);
+  const problems    = useMemo(() => getProblems(), []);
+  const topicAvg    = useMemo(() => avgScoreByTopic(), []);
 
-  // Bar chart: avg score per topic
   const topicBarData = Object.entries(topicAvg).map(([topic, avg]) => ({ topic, avg }));
 
-  // Pie chart: submissions by difficulty
   const diffCount: Record<string, number> = { Easy: 0, Medium: 0, Hard: 0 };
   submissions.forEach((s) => {
     const p = problems.find((pr) => pr.id === s.problemId);
@@ -77,26 +85,16 @@ const AnalyticsPanel = () => {
   });
   const pieData = Object.entries(diffCount).map(([name, value]) => ({ name, value }));
 
-  // Line chart: daily submissions
   const lineData = useMemo(() => last7DaysData(submissions), [submissions]);
 
-  // Most difficult problems (lowest avg score)
-  const problemStats = problems.map((p) => {
-    const subs = submissions.filter((s) => s.problemId === p.id);
-    const avg = subs.length ? Math.round(subs.reduce((a, b) => a + b.score, 0) / subs.length) : 0;
-    return { ...p, avg, attempts: subs.length };
-  }).sort((a, b) => a.avg - b.avg);
-
-  const hardestProblems = problemStats.slice(0, 4);
-
-  const tooltipStyle = {
-    contentStyle: {
-      background: "hsl(var(--card))",
-      border: "1px solid hsl(var(--border))",
-      borderRadius: "8px",
-      color: "hsl(var(--foreground))",
-    },
-  };
+  const hardestProblems = problems
+    .map((p) => {
+      const subs = submissions.filter((s) => s.problemId === p.id);
+      const avg = subs.length ? Math.round(subs.reduce((a, b) => a + b.score, 0) / subs.length) : 0;
+      return { ...p, avg, attempts: subs.length };
+    })
+    .sort((a, b) => a.avg - b.avg)
+    .slice(0, 4);
 
   return (
     <div className="p-6 space-y-6">
@@ -105,79 +103,99 @@ const AnalyticsPanel = () => {
         <p className="text-sm text-muted-foreground">Class-wide insights and trends</p>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* Topic Avg Bar */}
-        <ChartCard title="Avg Score by Topic" delay={0}>
-          <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={topicBarData} barSize={44}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-              <XAxis dataKey="topic" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} />
-              <YAxis domain={[0, 100]} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} />
-              <Tooltip {...tooltipStyle} formatter={(v) => [`${v}%`, "Avg Score"]} />
-              <Bar dataKey="avg" radius={[6, 6, 0, 0]}>
-                {topicBarData.map((entry) => (
-                  <Cell key={entry.topic} fill={TOPIC_COLORS[entry.topic as Topic]} />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </ChartCard>
+      {submissions.length === 0 ? (
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="rounded-2xl border border-dashed border-border/50 bg-card/30 py-20 text-center"
+        >
+          <BarChart2 className="mx-auto mb-3 h-10 w-10 text-muted-foreground/40" />
+          <p className="font-semibold text-foreground">No analytics data yet</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Charts and insights will appear here once students start submitting code.
+          </p>
+        </motion.div>
+      ) : (
+        <div className="grid gap-6 lg:grid-cols-2">
+          {/* Topic Avg Bar */}
+          <ChartCard title="Avg Score by Topic" delay={0}>
+            <ResponsiveContainer width="100%" height={200}>
+              <BarChart data={topicBarData} barSize={44}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis dataKey="topic" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} />
+                <YAxis domain={[0, 100]} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} />
+                <Tooltip {...tooltipStyle} formatter={(v) => [`${v}%`, "Avg Score"]} />
+                <Bar dataKey="avg" radius={[6, 6, 0, 0]}>
+                  {topicBarData.map((entry) => (
+                    <Cell key={entry.topic} fill={TOPIC_COLORS[entry.topic as Topic]} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </ChartCard>
 
-        {/* Difficulty Pie */}
-        <ChartCard title="Submissions by Difficulty" delay={0.1}>
-          <ResponsiveContainer width="100%" height={200}>
-            <PieChart>
-              <Pie data={pieData} cx="50%" cy="50%" outerRadius={75} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`} labelLine={false}>
-                {pieData.map((entry) => (
-                  <Cell key={entry.name} fill={DIFF_COLORS[entry.name]} />
-                ))}
-              </Pie>
-              <Legend formatter={(v) => <span style={{ color: "hsl(var(--foreground))", fontSize: 12 }}>{v}</span>} />
-              <Tooltip {...tooltipStyle} />
-            </PieChart>
-          </ResponsiveContainer>
-        </ChartCard>
+          {/* Difficulty Pie */}
+          <ChartCard title="Submissions by Difficulty" delay={0.1}>
+            <ResponsiveContainer width="100%" height={200}>
+              <PieChart>
+                <Pie data={pieData} cx="50%" cy="50%" outerRadius={75} dataKey="value"
+                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`} labelLine={false}>
+                  {pieData.map((entry) => (
+                    <Cell key={entry.name} fill={DIFF_COLORS[entry.name]} />
+                  ))}
+                </Pie>
+                <Legend formatter={(v) => <span style={{ color: "hsl(var(--foreground))", fontSize: 12 }}>{v}</span>} />
+                <Tooltip {...tooltipStyle} />
+              </PieChart>
+            </ResponsiveContainer>
+          </ChartCard>
 
-        {/* Daily Submissions Line */}
-        <ChartCard title="Daily Submissions (Last 7 Days)" delay={0.2}>
-          <ResponsiveContainer width="100%" height={200}>
-            <LineChart data={lineData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-              <XAxis dataKey="day" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} />
-              <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} />
-              <Tooltip {...tooltipStyle} formatter={(v) => [v, "Submissions"]} />
-              <Line type="monotone" dataKey="count" stroke="#7c3aed" strokeWidth={2.5} dot={{ fill: "#7c3aed", r: 4 }} activeDot={{ r: 6 }} />
-            </LineChart>
-          </ResponsiveContainer>
-        </ChartCard>
+          {/* Daily Submissions Line */}
+          <ChartCard title="Daily Submissions (Last 7 Days)" delay={0.2}>
+            <ResponsiveContainer width="100%" height={200}>
+              <LineChart data={lineData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis dataKey="day" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} />
+                <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 12 }} />
+                <Tooltip {...tooltipStyle} formatter={(v) => [v, "Submissions"]} />
+                <Line type="monotone" dataKey="count" stroke="#7c3aed" strokeWidth={2.5}
+                  dot={{ fill: "#7c3aed", r: 4 }} activeDot={{ r: 6 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </ChartCard>
 
-        {/* Hardest Problems */}
-        <ChartCard title="Most Difficult Problems" delay={0.3}>
-          <div className="space-y-3">
-            {hardestProblems.map((p, i) => (
-              <div key={p.id} className="flex items-center gap-3">
-                <span className="w-5 text-xs font-bold text-muted-foreground">{i + 1}.</span>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground truncate">{p.title}</p>
-                  <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-secondary">
-                    <div
-                      className="h-full rounded-full"
-                      style={{
-                        width: `${p.avg}%`,
-                        background: p.avg < 60 ? "#ef4444" : p.avg < 75 ? "#f59e0b" : "#10b981",
-                      }}
-                    />
+          {/* Hardest Problems */}
+          <ChartCard title="Most Difficult Problems" delay={0.3}>
+            {hardestProblems.length === 0 ? (
+              <p className="text-xs text-muted-foreground">No problem data yet.</p>
+            ) : (
+              <div className="space-y-3">
+                {hardestProblems.map((p, i) => (
+                  <div key={p.id} className="flex items-center gap-3">
+                    <span className="w-5 text-xs font-bold text-muted-foreground">{i + 1}.</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-foreground truncate">{p.title}</p>
+                      <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-secondary">
+                        <div
+                          className="h-full rounded-full"
+                          style={{
+                            width: `${p.avg}%`,
+                            background: p.avg < 60 ? "#ef4444" : p.avg < 75 ? "#f59e0b" : "#10b981",
+                          }}
+                        />
+                      </div>
+                    </div>
+                    <span className={`text-sm font-semibold ${p.avg < 60 ? "text-red-400" : p.avg < 75 ? "text-yellow-400" : "text-emerald-400"}`}>
+                      {p.avg}%
+                    </span>
+                    <span className="text-xs text-muted-foreground">{p.attempts} tries</span>
                   </div>
-                </div>
-                <span className={`text-sm font-semibold ${p.avg < 60 ? "text-red-400" : p.avg < 75 ? "text-yellow-400" : "text-emerald-400"}`}>
-                  {p.avg}%
-                </span>
-                <span className="text-xs text-muted-foreground">{p.attempts} tries</span>
+                ))}
               </div>
-            ))}
-          </div>
-        </ChartCard>
-      </div>
+            )}
+          </ChartCard>
+        </div>
+      )}
     </div>
   );
 };
