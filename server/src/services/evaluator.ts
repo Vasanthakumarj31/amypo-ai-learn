@@ -97,10 +97,11 @@ async function renderAndCapture(
 
   const screenshot = await page.screenshot({ type: "png" }) as Buffer;
 
-  // Extract DOM information
-  // NOTE: Use arrow functions inside page.evaluate() to avoid tsx/esbuild
-  // adding __name decorators to named function declarations, which would
-  // cause ReferenceError in the browser context.
+  // Inject __name shim so that tsx/esbuild-decorated functions work inside
+  // the browser context. esbuild wraps every function/arrow with __name()
+  // which doesn't exist in the page's global scope.
+  await page.evaluate("window.__name = (fn) => fn");
+
   const domInfo = await page.evaluate(() => {
     const getElementInfo = (el: Element) => {
       const computed = window.getComputedStyle(el);
