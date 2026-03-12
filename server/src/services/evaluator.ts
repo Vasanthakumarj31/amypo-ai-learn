@@ -616,10 +616,21 @@ function generateFeedback(
 
 // ─── Main Evaluation Function ────────────────────────────────────────────────
 
+/**
+ * Decode a base64 data-URL or raw base64 string into a Buffer.
+ * Supports "data:image/png;base64,..." and plain base64.
+ */
+function decodeBase64Image(dataUrl: string): Buffer {
+  const match = dataUrl.match(/^data:image\/\w+;base64,(.+)$/);
+  const raw = match ? match[1] : dataUrl;
+  return Buffer.from(raw, "base64");
+}
+
 export async function evaluateSubmission(
   studentCode: CodeBundle,
   referenceCode: CodeBundle | null,
-  expectedOutput: string
+  expectedOutput: string,
+  referenceImageUrl?: string
 ): Promise<EvaluationResult> {
   // Render student code
   const studentResult = await renderAndCapture(studentCode);
@@ -627,6 +638,7 @@ export async function evaluateSubmission(
   // Render reference code if provided
   let referenceResult: Awaited<ReturnType<typeof renderAndCapture>> | null = null;
   let visualMatchPercent = 0;
+  let referenceScreenshotBase64 = "";
 
   if (referenceCode && (referenceCode.html || referenceCode.css || referenceCode.js)) {
     referenceResult = await renderAndCapture(referenceCode);
@@ -634,6 +646,31 @@ export async function evaluateSubmission(
       studentResult.screenshot,
       referenceResult.screenshot
     );
+    referenceScreenshotBase64 = referenceResult.screenshot.toString("base64");
+  }
+
+  // If trainer uploaded a reference image, compare student screenshot against it
+  let imageMatchPercent = 0;
+  if (referenceImageUrl && referenceImageUrl.length > 0) {
+    try {
+      const refImageBuf = decodeBase64Image(referenceImageUrl);
+      imageMatchPercent = compareScreenshots(studentResult.screenshot, refImageBuf);
+
+      // Use the uploaded image match if no reference code was provided,
+      // or take the higher match of both comparison methods
+      if (!referenceResult) {
+        visualMatchPercent = imageMatchPercent;
+        // Use the uploaded image as the reference screenshot for display
+        referenceScreenshotBase64 = refImageBuf.toString("base64");
+      } else {
+        // Blend both: uploaded image match (40%) + rendered code match (60%)
+        visualMatchPercent = Math.round(
+          visualMatchPercent * 0.6 + imageMatchPercent * 0.4
+        );
+      }
+    } catch {
+      // If image decode fails, continue with code-only comparison
+    }
   }
 
   // Run all test suites
@@ -655,7 +692,8 @@ export async function evaluateSubmission(
 
   // Visual comparison test
   const visualTests: TestResult[] = [];
-  if (referenceResult) {
+  const hasVisualRef = !!referenceResult || (!!referenceImageUrl && referenceImageUrl.length > 0);
+  if (hasVisualRef) {
     visualTests.push({
       name: "Visual output matches reference",
       category: "Visual Tests",
@@ -665,6 +703,19 @@ export async function evaluateSubmission(
           ? `${visualMatchPercent}% visual match with reference`
           : `Only ${visualMatchPercent}% visual match - check layout and styling`,
     });
+
+    // Add separate image comparison test when both code and image references exist
+    if (referenceResult && referenceImageUrl && imageMatchPercent > 0) {
+      visualTests.push({
+        name: "Visual output matches uploaded reference image",
+        category: "Visual Tests",
+        passed: imageMatchPercent >= 70,
+        message:
+          imageMatchPercent >= 70
+            ? `${imageMatchPercent}% match with trainer's reference image`
+            : `Only ${imageMatchPercent}% match with trainer's reference image`,
+      });
+    }
   }
 
   const allTests = [...domTests, ...cssTests, ...jsTests, ...visualTests];
@@ -675,13 +726,13 @@ export async function evaluateSubmission(
   let score = totalCount > 0 ? Math.round((passedCount / totalCount) * 100) : 0;
 
   // Boost score with visual match if reference exists
-  if (referenceResult && visualMatchPercent > 0) {
+  if (hasVisualRef && visualMatchPercent > 0) {
     score = Math.round(score * 0.7 + visualMatchPercent * 0.3);
   }
 
   score = Math.min(100, Math.max(0, score));
 
-  const feedback = generateFeedback(allTests, visualMatchPercent, !!referenceResult);
+  const feedback = generateFeedback(allTests, visualMatchPercent, hasVisualRef);
 
   return {
     score,
@@ -689,7 +740,7 @@ export async function evaluateSubmission(
     testResults: allTests,
     feedback,
     studentScreenshot: studentResult.screenshot.toString("base64"),
-    referenceScreenshot: referenceResult?.screenshot.toString("base64") ?? "",
+    referenceScreenshot: referenceScreenshotBase64,
     visualMatchPercent,
   };
 }

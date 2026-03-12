@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { motion } from "framer-motion";
-import { X, Save, Loader2 } from "lucide-react";
+import { X, Save, Loader2, Upload, Trash2, ImageIcon } from "lucide-react";
 import Editor from "@monaco-editor/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,6 +27,10 @@ const emptyProblem: Omit<NormalizedProblem, "id" | "createdAt"> = {
   starterHtml: "<!DOCTYPE html>\n<html lang=\"en\">\n<head><meta charset=\"UTF-8\"><title>Starter</title></head>\n<body>\n  <!-- Your HTML here -->\n</body>\n</html>",
   starterCss: "/* Your CSS here */",
   starterJs: "// Your JavaScript here",
+  referenceHtml: "",
+  referenceCss: "",
+  referenceJs: "",
+  referenceImageUrl: "",
 };
 
 const ProblemForm = ({ initial, onSaved, onCancel }: Props) => {
@@ -34,7 +38,9 @@ const ProblemForm = ({ initial, onSaved, onCancel }: Props) => {
     initial ? { ...initial } : { ...emptyProblem }
   );
   const [codeTab, setCodeTab] = useState<"html" | "css" | "js">("html");
+  const [refCodeTab, setRefCodeTab] = useState<"html" | "css" | "js">("html");
   const [saving, setSaving] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const set = <K extends keyof typeof form>(k: K, v: (typeof form)[K]) =>
     setForm((f) => ({ ...f, [k]: v }));
@@ -64,6 +70,30 @@ const ProblemForm = ({ initial, onSaved, onCancel }: Props) => {
     if (codeTab === "html") set("starterHtml", val);
     else if (codeTab === "css") set("starterCss", val);
     else set("starterJs", val);
+  };
+
+  const currentRefCode =
+    refCodeTab === "html" ? form.referenceHtml : refCodeTab === "css" ? form.referenceCss : form.referenceJs;
+  const setRefCode = (val: string | undefined) => {
+    if (val === undefined) return;
+    if (refCodeTab === "html") set("referenceHtml", val);
+    else if (refCodeTab === "css") set("referenceCss", val);
+    else set("referenceJs", val);
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      set("referenceImageUrl", reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const removeImage = () => {
+    set("referenceImageUrl", "");
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   return (
@@ -199,6 +229,89 @@ const ProblemForm = ({ initial, onSaved, onCancel }: Props) => {
                 }}
               />
             </div>
+          </div>
+
+          {/* Reference Solution Code */}
+          <div className="space-y-1.5">
+            <Label>Reference Solution Code (used for evaluation)</Label>
+            <p className="text-xs text-muted-foreground">
+              Provide the correct solution. Puppeteer will render this and compare it visually against student submissions.
+            </p>
+            <div className="flex gap-1 rounded-t-lg border-x border-t border-border/50 bg-secondary/30 px-2 pt-2">
+              {(["html", "css", "js"] as const).map((t) => (
+                <button
+                  key={t}
+                  onClick={() => setRefCodeTab(t)}
+                  className={cn(
+                    "rounded-t-md px-3 py-1.5 text-xs font-medium transition-colors",
+                    refCodeTab === t
+                      ? "bg-card text-foreground border-x border-t border-border/50"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  {t.toUpperCase()}
+                </button>
+              ))}
+            </div>
+            <div className="h-48 overflow-hidden rounded-b-lg border border-border/50">
+              <Editor
+                theme="vs-dark"
+                language={refCodeTab === "js" ? "javascript" : refCodeTab}
+                value={currentRefCode}
+                onChange={setRefCode}
+                options={{
+                  fontSize: 13,
+                  minimap: { enabled: false },
+                  lineNumbers: "on",
+                  scrollBeyondLastLine: false,
+                  automaticLayout: true,
+                  padding: { top: 8 },
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Reference Webpage Image Upload */}
+          <div className="space-y-1.5">
+            <Label className="flex items-center gap-1.5">
+              <ImageIcon className="h-3.5 w-3.5 text-primary" />
+              Reference Webpage Image (optional)
+            </Label>
+            <p className="text-xs text-muted-foreground">
+              Upload a screenshot of the expected webpage output. This will be used for visual comparison during evaluation.
+            </p>
+
+            {form.referenceImageUrl ? (
+              <div className="relative rounded-lg border border-border/50 overflow-hidden">
+                <img
+                  src={form.referenceImageUrl}
+                  alt="Reference webpage"
+                  className="w-full max-h-64 object-contain bg-secondary/20"
+                />
+                <button
+                  onClick={removeImage}
+                  className="absolute top-2 right-2 rounded-lg bg-destructive/90 p-1.5 text-destructive-foreground hover:bg-destructive transition-colors"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="flex w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-border/50 bg-secondary/10 px-4 py-8 text-sm text-muted-foreground hover:border-primary/40 hover:bg-secondary/20 transition-colors"
+              >
+                <Upload className="h-5 w-5" />
+                <span>Click to upload reference image (PNG, JPG)</span>
+              </button>
+            )}
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/png,image/jpeg,image/webp"
+              onChange={handleImageUpload}
+              className="hidden"
+            />
           </div>
         </div>
 

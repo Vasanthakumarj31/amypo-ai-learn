@@ -13,6 +13,10 @@ export interface Problem {
   starterHtml: string;
   starterCss: string;
   starterJs: string;
+  referenceHtml: string;
+  referenceCss: string;
+  referenceJs: string;
+  referenceImageUrl: string;
   createdAt: string;
 }
 
@@ -76,6 +80,7 @@ const seedProblems: Problem[] = [
     starterHtml: `<!DOCTYPE html>\n<html lang="en">\n<head><meta charset="UTF-8"><title>Profile</title></head>\n<body>\n  <!-- Add your content here -->\n</body>\n</html>`,
     starterCss: `body { font-family: sans-serif; }`,
     starterJs: "",
+    referenceHtml: "", referenceCss: "", referenceJs: "", referenceImageUrl: "",
     createdAt: daysAgo(20),
   },
   {
@@ -85,6 +90,7 @@ const seedProblems: Problem[] = [
     starterHtml: `<nav class="navbar">\n  <div class="logo">Brand</div>\n  <ul>\n    <li><a href="#">Home</a></li>\n    <li><a href="#">About</a></li>\n    <li><a href="#">Contact</a></li>\n  </ul>\n</nav>`,
     starterCss: `.navbar { display: flex; padding: 1rem; }\n/* Finish the layout */`,
     starterJs: "",
+    referenceHtml: "", referenceCss: "", referenceJs: "", referenceImageUrl: "",
     createdAt: daysAgo(18),
   },
   {
@@ -94,6 +100,7 @@ const seedProblems: Problem[] = [
     starterHtml: `<form>\n  <!-- Add form fields here -->\n</form>`,
     starterCss: `form { display: flex; flex-direction: column; gap: 12px; max-width: 400px; margin: 2rem auto; }`,
     starterJs: "",
+    referenceHtml: "", referenceCss: "", referenceJs: "", referenceImageUrl: "",
     createdAt: daysAgo(15),
   },
   {
@@ -103,6 +110,7 @@ const seedProblems: Problem[] = [
     starterHtml: `<div class="counter">\n  <h1 id="count">0</h1>\n  <button id="inc">+</button>\n  <button id="dec">-</button>\n  <button id="reset">Reset</button>\n</div>`,
     starterCss: `.counter { text-align: center; margin-top: 2rem; }`,
     starterJs: `const countEl = document.getElementById('count');\n// Add event listeners`,
+    referenceHtml: "", referenceCss: "", referenceJs: "", referenceImageUrl: "",
     createdAt: daysAgo(12),
   },
   {
@@ -112,6 +120,7 @@ const seedProblems: Problem[] = [
     starterHtml: `<div class="grid">\n  <div class="card"><h3>Card 1</h3><p>Description</p></div>\n  <div class="card"><h3>Card 2</h3><p>Description</p></div>\n  <div class="card"><h3>Card 3</h3><p>Description</p></div>\n  <div class="card"><h3>Card 4</h3><p>Description</p></div>\n</div>`,
     starterCss: `.grid { display: grid; gap: 1rem; }\n/* Add responsive columns */`,
     starterJs: "",
+    referenceHtml: "", referenceCss: "", referenceJs: "", referenceImageUrl: "",
     createdAt: daysAgo(10),
   },
   {
@@ -121,6 +130,7 @@ const seedProblems: Problem[] = [
     starterHtml: `<div class="todo-app">\n  <input id="input" type="text" placeholder="Add a task...">\n  <button id="add">Add</button>\n  <ul id="list"></ul>\n</div>`,
     starterCss: `.todo-app { max-width: 400px; margin: 2rem auto; }\n.done { text-decoration: line-through; color: #999; }`,
     starterJs: `const input = document.getElementById('input');\nconst addBtn = document.getElementById('add');\nconst list = document.getElementById('list');\n// Add your code here`,
+    referenceHtml: "", referenceCss: "", referenceJs: "", referenceImageUrl: "",
     createdAt: daysAgo(8),
   },
   {
@@ -130,6 +140,7 @@ const seedProblems: Problem[] = [
     starterHtml: `<div id="users" class="grid"></div>\n<p id="status">Loading...</p>`,
     starterCss: `.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1rem; padding: 1rem; }`,
     starterJs: `async function fetchUsers() {\n  // Fetch from https://jsonplaceholder.typicode.com/users\n}\nfetchUsers();`,
+    referenceHtml: "", referenceCss: "", referenceJs: "", referenceImageUrl: "",
     createdAt: daysAgo(5),
   },
   {
@@ -139,6 +150,7 @@ const seedProblems: Problem[] = [
     starterHtml: `<div class="spinner"></div>\n<div class="ball"></div>`,
     starterCss: `.spinner { width: 50px; height: 50px; border: 4px solid #ccc; border-top-color: #7c3aed; border-radius: 50%; }\n.ball { width: 30px; height: 30px; background: #0ea5e9; border-radius: 50%; margin-top: 2rem; }\n/* Add animations */`,
     starterJs: "",
+    referenceHtml: "", referenceCss: "", referenceJs: "", referenceImageUrl: "",
     createdAt: daysAgo(3),
   },
 ];
