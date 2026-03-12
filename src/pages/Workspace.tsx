@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useRef } from "react";
 import { useParams, Link } from "react-router-dom";
 import Editor from "@monaco-editor/react";
 import {
@@ -27,6 +27,8 @@ import ResultPanel from "@/components/workspace/ResultPanel";
 import PreviewFrame from "@/components/workspace/PreviewFrame";
 import { courses } from "@/data/courses";
 import { getProblems, getLessonContent } from "@/lib/trainerStore";
+import { apiSubmitCode } from "@/lib/api";
+import type { EvaluationData } from "@/components/workspace/ResultPanel";
 
 const defaultHTML = `<!DOCTYPE html>
 <html lang="en">
@@ -111,7 +113,10 @@ const Workspace = () => {
   const [activeTab, setActiveTab] = useState("html");
   const [rightTab, setRightTab] = useState<RightTab>("Problem");
   const [submitted, setSubmitted] = useState(false);
+  const [evaluating, setEvaluating] = useState(false);
+  const [evaluation, setEvaluation] = useState<EvaluationData | null>(null);
   const [explorerOpen, setExplorerOpen] = useState(true);
+  const startTimeRef = useRef(Date.now());
 
   const [htmlCode, setHtmlCode] = useState(initHtml);
   const [cssCode, setCssCode] = useState(initCss);
@@ -153,10 +158,49 @@ const Workspace = () => {
     setPreviewJs(jsCode);
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     handleRun();
     setSubmitted(true);
+    setEvaluating(true);
+    setEvaluation(null);
     setRightTab("Results");
+
+    const timeSpent = Math.round((Date.now() - startTimeRef.current) / 60000);
+
+    try {
+      // Get or create a demo student ID from sessionStorage
+      let studentId = sessionStorage.getItem("amypo_student_id") || "";
+      if (!studentId) {
+        // Use a default demo student — backend will create if needed
+        studentId = "000000000000000000000000";
+      }
+
+      const result = await apiSubmitCode({
+        studentId,
+        problemId: trainerProblem?.id,
+        lessonId: lessonId,
+        htmlCode,
+        cssCode,
+        jsCode,
+        timeSpent,
+      });
+
+      setEvaluation(result.evaluation);
+    } catch (err) {
+      console.error("Evaluation error:", err);
+      // Provide a fallback evaluation on error
+      setEvaluation({
+        score: 0,
+        isCorrect: false,
+        testResults: [],
+        feedback: ["Backend evaluation unavailable. Please ensure the server is running on port 5000."],
+        visualMatchPercent: 0,
+        studentScreenshot: "",
+        referenceScreenshot: "",
+      });
+    } finally {
+      setEvaluating(false);
+    }
   };
 
   const handleReset = () => {
@@ -308,8 +352,8 @@ const Workspace = () => {
               </div>
               <div className="flex-1 overflow-auto">
                 {rightTab === "Problem" && <ProblemPanel lessonTitle={lessonTitle} lessonId={lessonId} />}
-                {rightTab === "Tests" && <TestCasePanel />}
-                {rightTab === "Results" && <ResultPanel submitted={submitted} />}
+                {rightTab === "Tests" && <TestCasePanel testResults={evaluation?.testResults} />}
+                {rightTab === "Results" && <ResultPanel submitted={submitted} evaluating={evaluating} evaluation={evaluation} />}
               </div>
             </div>
           </Panel>
