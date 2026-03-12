@@ -1,23 +1,24 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { X, Save } from "lucide-react";
+import { X, Save, Loader2 } from "lucide-react";
 import Editor from "@monaco-editor/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
-import { saveProblem, type Problem, type Topic, type Difficulty } from "@/lib/trainerStore";
+import { type Topic, type Difficulty } from "@/lib/trainerStore";
+import { hybridSaveProblem, type NormalizedProblem } from "@/hooks/useBackendData";
 
 const TOPICS: Topic[] = ["HTML", "CSS", "JavaScript"];
 const DIFFICULTIES: Difficulty[] = ["Easy", "Medium", "Hard"];
 
 interface Props {
-  initial?: Problem;
+  initial?: NormalizedProblem;
   onSaved: () => void;
   onCancel: () => void;
 }
 
-const emptyProblem: Omit<Problem, "id" | "createdAt"> = {
+const emptyProblem: Omit<NormalizedProblem, "id" | "createdAt"> = {
   title: "",
   description: "",
   topic: "HTML",
@@ -29,22 +30,31 @@ const emptyProblem: Omit<Problem, "id" | "createdAt"> = {
 };
 
 const ProblemForm = ({ initial, onSaved, onCancel }: Props) => {
-  const [form, setForm] = useState<Omit<Problem, "id" | "createdAt">>(
+  const [form, setForm] = useState<Omit<NormalizedProblem, "id" | "createdAt">>(
     initial ? { ...initial } : { ...emptyProblem }
   );
   const [codeTab, setCodeTab] = useState<"html" | "css" | "js">("html");
+  const [saving, setSaving] = useState(false);
 
   const set = <K extends keyof typeof form>(k: K, v: (typeof form)[K]) =>
     setForm((f) => ({ ...f, [k]: v }));
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.title.trim() || !form.description.trim()) return;
-    saveProblem({
-      ...form,
-      id: initial?.id ?? "",
-      createdAt: initial?.createdAt ?? new Date().toISOString(),
-    });
-    onSaved();
+    setSaving(true);
+    try {
+      await hybridSaveProblem(
+        {
+          ...form,
+          id: initial?.id ?? "",
+          createdAt: initial?.createdAt ?? new Date().toISOString(),
+        },
+        !initial,
+      );
+      onSaved();
+    } finally {
+      setSaving(false);
+    }
   };
 
   const currentCode =
@@ -195,8 +205,8 @@ const ProblemForm = ({ initial, onSaved, onCancel }: Props) => {
         {/* Footer */}
         <div className="flex justify-end gap-3 border-t border-border/50 px-6 py-4">
           <Button variant="outline" onClick={onCancel}>Cancel</Button>
-          <Button onClick={handleSave} className="gap-2">
-            <Save className="h-4 w-4" />
+          <Button onClick={handleSave} disabled={saving} className="gap-2">
+            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
             {initial ? "Save Changes" : "Create Problem"}
           </Button>
         </div>

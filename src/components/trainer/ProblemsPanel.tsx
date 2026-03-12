@@ -1,10 +1,10 @@
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Pencil, Trash2, Search, BookOpen } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, BookOpen, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { getProblems, deleteProblem, type Problem } from "@/lib/trainerStore";
+import { useProblems, hybridDeleteProblem, type NormalizedProblem } from "@/hooks/useBackendData";
 import ProblemForm from "./ProblemForm";
 
 const DIFF_COLOR: Record<string, string> = {
@@ -20,9 +20,9 @@ const TOPIC_COLOR: Record<string, string> = {
 };
 
 const ProblemsPanel = () => {
-  const [problems, setProblems] = useState<Problem[]>(() => getProblems());
+  const { problems, loading, refresh } = useProblems();
   const [search, setSearch] = useState("");
-  const [editing, setEditing] = useState<Problem | null | "new">(null);
+  const [editing, setEditing] = useState<NormalizedProblem | null | "new">(null);
 
   const filtered = useMemo(
     () =>
@@ -34,16 +34,24 @@ const ProblemsPanel = () => {
     [problems, search]
   );
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (!confirm("Delete this problem?")) return;
-    deleteProblem(id);
-    setProblems(getProblems());
+    await hybridDeleteProblem(id);
+    refresh();
   };
 
   const handleSaved = () => {
-    setProblems(getProblems());
+    refresh();
     setEditing(null);
   };
+
+  if (loading) {
+    return (
+      <div className="flex h-64 items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-5">

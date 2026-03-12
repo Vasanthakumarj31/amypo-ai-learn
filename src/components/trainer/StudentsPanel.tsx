@@ -1,16 +1,10 @@
 import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
-import { Search, ChevronRight, AlertTriangle } from "lucide-react";
+import { Search, ChevronRight, AlertTriangle, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import {
-  getStudents,
-  getSubmissionsForStudent,
-  studentAvgScore,
-  studentWeakTopic,
-  type Student,
-  type Topic,
-} from "@/lib/trainerStore";
+import { type Topic } from "@/lib/trainerStore";
+import { useStudents, useSubmissions, useProblems, type NormalizedStudent } from "@/hooks/useBackendData";
 import StudentDetail from "./StudentDetail";
 
 const TOPIC_COLOR: Record<Topic, string> = {
@@ -23,9 +17,11 @@ const SCORE_COLOR = (s: number) =>
   s >= 80 ? "text-emerald-400" : s >= 60 ? "text-yellow-400" : "text-red-400";
 
 const StudentsPanel = () => {
-  const students = useMemo(() => getStudents(), []);
+  const { students, loading: studentsLoading } = useStudents();
+  const { submissions } = useSubmissions();
+  const { problems } = useProblems();
   const [search, setSearch] = useState("");
-  const [selected, setSelected] = useState<Student | null>(null);
+  const [selected, setSelected] = useState<NormalizedStudent | null>(null);
 
   const rows = useMemo(
     () =>
@@ -34,14 +30,34 @@ const StudentsPanel = () => {
           s.name.toLowerCase().includes(search.toLowerCase()) ||
           s.email.toLowerCase().includes(search.toLowerCase())
         )
-        .map((s) => ({
-          ...s,
-          attempted: getSubmissionsForStudent(s.id).length,
-          avg: studentAvgScore(s.id),
-          weak: studentWeakTopic(s.id),
-        })),
-    [students, search]
+        .map((s) => {
+          const subs = submissions.filter((sub) => sub.studentId === s.id);
+          const avg = subs.length ? Math.round(subs.reduce((a, b) => a + b.score, 0) / subs.length) : 0;
+          // Compute weak topic
+          const grouped: Record<Topic, number[]> = { HTML: [], CSS: [], JavaScript: [] };
+          subs.forEach((sub) => {
+            const p = problems.find((pr) => pr.id === sub.problemId);
+            if (p && grouped[p.topic]) grouped[p.topic].push(sub.score);
+          });
+          let weak: Topic | null = null;
+          let weakScore = Infinity;
+          (Object.keys(grouped) as Topic[]).forEach((t) => {
+            if (!grouped[t].length) return;
+            const topicAvg = grouped[t].reduce((a, b) => a + b, 0) / grouped[t].length;
+            if (topicAvg < weakScore) { weakScore = topicAvg; weak = t; }
+          });
+          return { ...s, attempted: subs.length, avg, weak };
+        }),
+    [students, submissions, problems, search]
   );
+
+  if (studentsLoading) {
+    return (
+      <div className="flex h-64 items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   if (selected)
     return <StudentDetail student={selected} onBack={() => setSelected(null)} />;

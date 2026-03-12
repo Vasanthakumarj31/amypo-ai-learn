@@ -11,15 +11,12 @@ import {
   Save,
   CheckCircle2,
   Code2,
+  Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import {
-  getLessonContent,
-  saveLessonContent,
-  clearLessonContent,
-  type LessonContent,
-} from "@/lib/trainerStore";
+import { getLessonContent } from "@/lib/trainerStore";
+import { hybridSaveLessonContent, hybridClearLessonContent } from "@/hooks/useBackendData";
 import { courses } from "@/data/courses";
 
 // ─── Lesson Edit Modal ────────────────────────────────────────────────────────
@@ -38,6 +35,7 @@ const EditModal = ({ lessonId, lessonTitle, onClose }: EditModalProps) => {
   const [starterJs, setStarterJs] = useState(existing?.starterJs ?? "");
   const [codeTab, setCodeTab] = useState<"html" | "css" | "js">("html");
   const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   // Handle image upload → convert to base64
@@ -49,23 +47,28 @@ const EditModal = ({ lessonId, lessonTitle, onClose }: EditModalProps) => {
     reader.readAsDataURL(file);
   };
 
-  const handleSave = () => {
-    saveLessonContent({
-      lessonId,
-      task,
-      referenceImageUrl: imageUrl,
-      starterHtml,
-      starterCss,
-      starterJs,
-      updatedAt: new Date().toISOString(),
-    });
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await hybridSaveLessonContent({
+        lessonId,
+        task,
+        referenceImageUrl: imageUrl,
+        starterHtml,
+        starterCss,
+        starterJs,
+        updatedAt: new Date().toISOString(),
+      });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handleClear = () => {
+  const handleClear = async () => {
     if (!confirm("Remove trainer content for this lesson?")) return;
-    clearLessonContent(lessonId);
+    await hybridClearLessonContent(lessonId);
     setTask("");
     setImageUrl("");
     setStarterHtml("");
@@ -222,8 +225,10 @@ const EditModal = ({ lessonId, lessonTitle, onClose }: EditModalProps) => {
           <p className="text-xs text-muted-foreground">
             Changes are reflected immediately for all students.
           </p>
-          <Button onClick={handleSave} className="gap-2">
-            {saved ? (
+          <Button onClick={handleSave} disabled={saving} className="gap-2">
+            {saving ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : saved ? (
               <>
                 <CheckCircle2 className="h-4 w-4 text-emerald-400" />
                 Saved!

@@ -1,20 +1,41 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Code2, Eye, EyeOff, ArrowRight } from "lucide-react";
+import { Code2, Eye, EyeOff, ArrowRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
+import { apiCreateStudent } from "@/lib/api";
 
 const LoginPage = () => {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    navigate("/dashboard");
+    setError("");
+    setLoading(true);
+    try {
+      // Register/login student via backend API
+      const studentName = name.trim() || email.split("@")[0];
+      const student = await apiCreateStudent(studentName, email);
+      sessionStorage.setItem("amypo_student_id", student._id);
+      sessionStorage.setItem("amypo_student_name", student.name);
+      sessionStorage.setItem("amypo_student_email", student.email);
+      navigate("/dashboard");
+    } catch {
+      // If backend is unavailable, still allow navigation (offline mode)
+      sessionStorage.setItem("amypo_student_email", email);
+      sessionStorage.setItem("amypo_student_name", name.trim() || email.split("@")[0]);
+      navigate("/dashboard");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -43,7 +64,24 @@ const LoginPage = () => {
             <p className="mt-1.5 text-sm text-muted-foreground">Sign in to your AMYPO account</p>
           </div>
 
+          {error && (
+            <p className="rounded-lg bg-destructive/10 border border-destructive/30 px-3 py-2 text-xs text-destructive mb-4">
+              {error}
+            </p>
+          )}
+
           <form onSubmit={handleLogin} className="space-y-5">
+            <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.15 }}>
+              <label className="mb-1.5 block text-sm font-medium text-foreground">Full Name</label>
+              <Input
+                type="text"
+                placeholder="Your full name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="border-border/50 bg-secondary/30 text-foreground placeholder:text-muted-foreground focus-visible:ring-primary focus-visible:border-primary/50 transition-all duration-300"
+              />
+            </motion.div>
+
             <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }}>
               <label className="mb-1.5 block text-sm font-medium text-foreground">Email</label>
               <Input
@@ -82,9 +120,8 @@ const LoginPage = () => {
               </label>
             </div>
 
-            <Button type="submit" className="w-full bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg shadow-primary/25 hover:shadow-primary/40 transition-all duration-300 h-11">
-              Sign in
-              <ArrowRight className="h-4 w-4" />
+            <Button type="submit" disabled={loading} className="w-full bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg shadow-primary/25 hover:shadow-primary/40 transition-all duration-300 h-11">
+              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <><span>Sign in</span><ArrowRight className="h-4 w-4" /></>}
             </Button>
           </form>
 

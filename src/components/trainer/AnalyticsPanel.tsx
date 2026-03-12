@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { motion } from "framer-motion";
-import { BarChart2 } from "lucide-react";
+import { BarChart2, Loader2 } from "lucide-react";
 import {
   BarChart,
   Bar,
@@ -16,12 +16,8 @@ import {
   LineChart,
   Line,
 } from "recharts";
-import {
-  getSubmissions,
-  getProblems,
-  avgScoreByTopic,
-  type Topic,
-} from "@/lib/trainerStore";
+import { type Topic } from "@/lib/trainerStore";
+import { useSubmissions, useProblems, type NormalizedSubmission } from "@/hooks/useBackendData";
 
 const TOPIC_COLORS: Record<Topic, string> = {
   HTML: "#f97316",
@@ -35,7 +31,7 @@ const DIFF_COLORS: Record<string, string> = {
   Hard: "#ef4444",
 };
 
-function last7DaysData(submissions: ReturnType<typeof getSubmissions>) {
+function last7DaysData(submissions: NormalizedSubmission[]) {
   const result = [];
   for (let i = 6; i >= 0; i--) {
     const d = new Date();
@@ -72,11 +68,34 @@ const tooltipStyle = {
 };
 
 const AnalyticsPanel = () => {
-  const submissions = useMemo(() => getSubmissions(), []);
-  const problems    = useMemo(() => getProblems(), []);
-  const topicAvg    = useMemo(() => avgScoreByTopic(), []);
+  const { submissions, loading: subsLoading } = useSubmissions();
+  const { problems, loading: probsLoading } = useProblems();
+
+  // Compute topic averages
+  const topicAvg = useMemo(() => {
+    const grouped: Record<string, number[]> = { HTML: [], CSS: [], JavaScript: [] };
+    submissions.forEach((s) => {
+      const p = problems.find((pr) => pr.id === s.problemId);
+      if (p && grouped[p.topic]) grouped[p.topic].push(s.score);
+    });
+    return {
+      HTML: grouped.HTML.length ? Math.round(grouped.HTML.reduce((a, b) => a + b, 0) / grouped.HTML.length) : 0,
+      CSS: grouped.CSS.length ? Math.round(grouped.CSS.reduce((a, b) => a + b, 0) / grouped.CSS.length) : 0,
+      JavaScript: grouped.JavaScript.length ? Math.round(grouped.JavaScript.reduce((a, b) => a + b, 0) / grouped.JavaScript.length) : 0,
+    };
+  }, [submissions, problems]);
 
   const topicBarData = Object.entries(topicAvg).map(([topic, avg]) => ({ topic, avg }));
+
+  const lineData = useMemo(() => last7DaysData(submissions), [submissions]);
+
+  if (subsLoading || probsLoading) {
+    return (
+      <div className="flex h-64 items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   const diffCount: Record<string, number> = { Easy: 0, Medium: 0, Hard: 0 };
   submissions.forEach((s) => {
@@ -84,8 +103,6 @@ const AnalyticsPanel = () => {
     if (p) diffCount[p.difficulty] = (diffCount[p.difficulty] || 0) + 1;
   });
   const pieData = Object.entries(diffCount).map(([name, value]) => ({ name, value }));
-
-  const lineData = useMemo(() => last7DaysData(submissions), [submissions]);
 
   const hardestProblems = problems
     .map((p) => {
