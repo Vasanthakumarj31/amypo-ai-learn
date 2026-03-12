@@ -1,12 +1,13 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ChevronRight, BookOpen, Sparkles, FolderCode, GraduationCap, Zap, Tag } from "lucide-react";
+import { ChevronRight, BookOpen, Sparkles, FolderCode, GraduationCap, Zap, Tag, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import DashboardSidebar from "@/components/DashboardSidebar";
 import { courses } from "@/data/courses";
-import { getProblems, seedIfNeeded, type Problem, type Topic } from "@/lib/trainerStore";
+import { seedIfNeeded, type Topic } from "@/lib/trainerStore";
+import { useProblems } from "@/hooks/useBackendData";
 import { cn } from "@/lib/utils";
 
 // Seed trainer data if not present
@@ -28,7 +29,7 @@ const TOPICS: Topic[] = ["HTML", "CSS", "JavaScript"];
 
 const TrainerProblemsSection = ({ navigate }: { navigate: (path: string) => void }) => {
   const [activeTopic, setActiveTopic] = useState<Topic>("HTML");
-  const problems = useMemo(() => getProblems(), []);
+  const { problems, loading } = useProblems();
   const filtered = problems.filter((p) => p.topic === activeTopic);
 
   if (problems.length === 0) return null;

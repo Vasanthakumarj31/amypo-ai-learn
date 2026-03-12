@@ -1,6 +1,5 @@
-import { useMemo } from "react";
 import { motion } from "framer-motion";
-import { Users, BookOpen, Send, TrendingUp, Trophy, AlertCircle, UserPlus } from "lucide-react";
+import { Users, BookOpen, Send, TrendingUp, Trophy, AlertCircle, UserPlus, Loader2 } from "lucide-react";
 import {
   BarChart,
   Bar,
@@ -10,13 +9,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import {
-  getProblems,
-  getStudents,
-  getSubmissions,
-  avgScoreByTopic,
-  studentAvgScore,
-} from "@/lib/trainerStore";
+import { useStudents, useProblems, useSubmissions } from "@/hooks/useBackendData";
 
 const StatCard = ({
   icon: Icon,
@@ -52,10 +45,20 @@ const TOPIC_COLORS: Record<string, string> = {
 };
 
 const OverviewPanel = () => {
-  const problems   = useMemo(() => getProblems(), []);
-  const students   = useMemo(() => getStudents(), []);
-  const submissions = useMemo(() => getSubmissions(), []);
-  const topicAvg   = useMemo(() => avgScoreByTopic(), []);
+  const { problems } = useProblems();
+  const { students, loading: studentsLoading } = useStudents();
+  const { submissions, loading: subsLoading } = useSubmissions();
+
+  // Compute topic averages from loaded data
+  const topicAvg: Record<string, number> = { HTML: 0, CSS: 0, JavaScript: 0 };
+  const grouped: Record<string, number[]> = { HTML: [], CSS: [], JavaScript: [] };
+  submissions.forEach((s) => {
+    const p = problems.find((pr) => pr.id === s.problemId);
+    if (p && grouped[p.topic]) grouped[p.topic].push(s.score);
+  });
+  Object.keys(grouped).forEach((t) => {
+    topicAvg[t] = grouped[t].length ? Math.round(grouped[t].reduce((a, b) => a + b, 0) / grouped[t].length) : 0;
+  });
 
   const chartData = Object.entries(topicAvg).map(([topic, avg]) => ({
     topic,
@@ -69,8 +72,13 @@ const OverviewPanel = () => {
       ? Math.round(submissions.reduce((a, b) => a + b.score, 0) / submissions.length)
       : 0;
 
+  // Compute student averages
   const topStudents = [...students]
-    .map((s) => ({ ...s, avg: studentAvgScore(s.id) }))
+    .map((s) => {
+      const subs = submissions.filter((sub) => sub.studentId === s.id);
+      const avg = subs.length ? Math.round(subs.reduce((a, b) => a + b.score, 0) / subs.length) : 0;
+      return { ...s, avg };
+    })
     .sort((a, b) => b.avg - a.avg)
     .slice(0, 3);
 
@@ -78,7 +86,16 @@ const OverviewPanel = () => {
     .filter(([, avg]) => avg > 0 && avg < 70)
     .sort((a, b) => a[1] - b[1]);
 
+  const loading = studentsLoading || subsLoading;
   const hasData = students.length > 0 || submissions.length > 0;
+
+  if (loading) {
+    return (
+      <div className="flex h-64 items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 p-6">

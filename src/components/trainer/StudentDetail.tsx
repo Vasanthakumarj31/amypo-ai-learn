@@ -13,16 +13,11 @@ import {
 } from "recharts";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import {
-  getProblems,
-  getSubmissionsForStudent,
-  studentTopicScores,
-  studentWeakTopic,
-  type Student,
-} from "@/lib/trainerStore";
+import { type Topic } from "@/lib/trainerStore";
+import { useSubmissions, useProblems, type NormalizedStudent } from "@/hooks/useBackendData";
 
 interface Props {
-  student: Student;
+  student: NormalizedStudent;
   onBack: () => void;
 }
 
@@ -33,10 +28,35 @@ const TOPIC_COLORS: Record<string, string> = {
 };
 
 const StudentDetail = ({ student, onBack }: Props) => {
-  const submissions = useMemo(() => getSubmissionsForStudent(student.id), [student.id]);
-  const problems = useMemo(() => getProblems(), []);
-  const topicScores = useMemo(() => studentTopicScores(student.id), [student.id]);
-  const weakTopic = useMemo(() => studentWeakTopic(student.id), [student.id]);
+  const { submissions: allSubmissions } = useSubmissions();
+  const { problems } = useProblems();
+  const submissions = useMemo(() => allSubmissions.filter((s) => s.studentId === student.id), [allSubmissions, student.id]);
+
+  // Compute topic scores
+  const topicScores = useMemo(() => {
+    const grouped: Record<Topic, number[]> = { HTML: [], CSS: [], JavaScript: [] };
+    submissions.forEach((s) => {
+      const p = problems.find((pr) => pr.id === s.problemId);
+      if (p && grouped[p.topic]) grouped[p.topic].push(s.score);
+    });
+    return {
+      HTML: grouped.HTML.length ? Math.round(grouped.HTML.reduce((a, b) => a + b, 0) / grouped.HTML.length) : 0,
+      CSS: grouped.CSS.length ? Math.round(grouped.CSS.reduce((a, b) => a + b, 0) / grouped.CSS.length) : 0,
+      JavaScript: grouped.JavaScript.length ? Math.round(grouped.JavaScript.reduce((a, b) => a + b, 0) / grouped.JavaScript.length) : 0,
+    };
+  }, [submissions, problems]);
+
+  const weakTopic = useMemo(() => {
+    let weak: Topic | null = null;
+    let weakScore = Infinity;
+    (Object.keys(topicScores) as Topic[]).forEach((t) => {
+      if (topicScores[t] > 0 && topicScores[t] < weakScore) {
+        weakScore = topicScores[t];
+        weak = t;
+      }
+    });
+    return weak;
+  }, [topicScores]);
 
   const chartData = Object.entries(topicScores).map(([topic, avg]) => ({ topic, avg }));
 

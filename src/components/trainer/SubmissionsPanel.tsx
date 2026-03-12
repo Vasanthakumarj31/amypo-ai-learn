@@ -1,9 +1,9 @@
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, CheckCircle2, XCircle, Clock, Code2 } from "lucide-react";
+import { X, CheckCircle2, XCircle, Clock, Code2, Loader2 } from "lucide-react";
 import Editor from "@monaco-editor/react";
 import { cn } from "@/lib/utils";
-import { getSubmissions, getStudents, getProblems, type Submission } from "@/lib/trainerStore";
+import { useSubmissions, useStudents, useProblems, type NormalizedSubmission } from "@/hooks/useBackendData";
 
 const TOPIC_COLOR: Record<string, string> = {
   HTML: "text-orange-400 bg-orange-400/10 border-orange-400/30",
@@ -17,7 +17,7 @@ const CodeModal = ({
   problemTitle,
   onClose,
 }: {
-  submission: Submission;
+  submission: NormalizedSubmission;
   studentName: string;
   problemTitle: string;
   onClose: () => void;
@@ -90,10 +90,19 @@ const CodeModal = ({
 };
 
 const SubmissionsPanel = () => {
-  const submissions = useMemo(() => getSubmissions().sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime()), []);
-  const students = useMemo(() => getStudents(), []);
-  const problems = useMemo(() => getProblems(), []);
-  const [viewing, setViewing] = useState<Submission | null>(null);
+  const { submissions: rawSubmissions, loading: subsLoading } = useSubmissions();
+  const { students } = useStudents();
+  const { problems } = useProblems();
+  const [viewing, setViewing] = useState<NormalizedSubmission | null>(null);
+  const submissions = [...rawSubmissions].sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime());
+
+  if (subsLoading) {
+    return (
+      <div className="flex h-64 items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   const rows = submissions.map((s) => ({
     ...s,
