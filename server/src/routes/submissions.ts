@@ -58,6 +58,7 @@ router.post("/", async (req: Request, res: Response) => {
     // Get reference code from problem or lesson content
     let referenceCode: { html: string; css: string; js: string } | null = null;
     let expectedOutput = "";
+    let referenceImageUrl = "";
 
     if (problemId) {
       const problem = await Problem.findById(problemId);
@@ -69,6 +70,9 @@ router.post("/", async (req: Request, res: Response) => {
             css: problem.referenceCss,
             js: problem.referenceJs,
           };
+        }
+        if (problem.referenceImageUrl) {
+          referenceImageUrl = problem.referenceImageUrl;
         }
       }
     }
@@ -86,12 +90,15 @@ router.post("/", async (req: Request, res: Response) => {
         if (!expectedOutput && lesson.task) {
           expectedOutput = lesson.task;
         }
+        if (!referenceImageUrl && lesson.referenceImageUrl) {
+          referenceImageUrl = lesson.referenceImageUrl;
+        }
       }
     }
 
     // Run Puppeteer evaluation
     const studentCode = { html: htmlCode || "", css: cssCode || "", js: jsCode || "" };
-    const evaluation = await evaluateSubmission(studentCode, referenceCode, expectedOutput);
+    const evaluation = await evaluateSubmission(studentCode, referenceCode, expectedOutput, referenceImageUrl || undefined);
 
     // Save submission with evaluation results
     const submission = new Submission({

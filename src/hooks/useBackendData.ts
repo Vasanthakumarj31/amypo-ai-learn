@@ -75,6 +75,10 @@ export interface NormalizedProblem {
   starterHtml: string;
   starterCss: string;
   starterJs: string;
+  referenceHtml: string;
+  referenceCss: string;
+  referenceJs: string;
+  referenceImageUrl: string;
   createdAt: string;
 }
 
@@ -118,6 +122,10 @@ function adaptAPIProblem(p: APIProblem): NormalizedProblem {
     starterHtml: p.starterHtml,
     starterCss: p.starterCss,
     starterJs: p.starterJs,
+    referenceHtml: p.referenceHtml || "",
+    referenceCss: p.referenceCss || "",
+    referenceJs: p.referenceJs || "",
+    referenceImageUrl: p.referenceImageUrl || "",
     createdAt: p.createdAt,
   };
 }
@@ -164,6 +172,10 @@ function adaptLocalProblem(p: LocalProblem): NormalizedProblem {
     starterHtml: p.starterHtml,
     starterCss: p.starterCss,
     starterJs: p.starterJs,
+    referenceHtml: p.referenceHtml || "",
+    referenceCss: p.referenceCss || "",
+    referenceJs: p.referenceJs || "",
+    referenceImageUrl: p.referenceImageUrl || "",
     createdAt: p.createdAt,
   };
 }
@@ -362,6 +374,10 @@ export async function hybridSaveProblem(problem: NormalizedProblem, isNew: boole
       starterHtml: problem.starterHtml,
       starterCss: problem.starterCss,
       starterJs: problem.starterJs,
+      referenceHtml: problem.referenceHtml,
+      referenceCss: problem.referenceCss,
+      referenceJs: problem.referenceJs,
+      referenceImageUrl: problem.referenceImageUrl,
     };
     if (isNew) {
       await apiCreateProblem(payload);
@@ -379,6 +395,10 @@ export async function hybridSaveProblem(problem: NormalizedProblem, isNew: boole
       starterHtml: problem.starterHtml,
       starterCss: problem.starterCss,
       starterJs: problem.starterJs,
+      referenceHtml: problem.referenceHtml,
+      referenceCss: problem.referenceCss,
+      referenceJs: problem.referenceJs,
+      referenceImageUrl: problem.referenceImageUrl,
       createdAt: problem.createdAt,
     });
   }
