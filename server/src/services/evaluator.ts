@@ -98,8 +98,11 @@ async function renderAndCapture(
   const screenshot = await page.screenshot({ type: "png" }) as Buffer;
 
   // Extract DOM information
+  // NOTE: Use arrow functions inside page.evaluate() to avoid tsx/esbuild
+  // adding __name decorators to named function declarations, which would
+  // cause ReferenceError in the browser context.
   const domInfo = await page.evaluate(() => {
-    function getElementInfo(el: Element): ElementInfo {
+    const getElementInfo = (el: Element) => {
       const computed = window.getComputedStyle(el);
       return {
         tag: el.tagName.toLowerCase(),
@@ -108,7 +111,7 @@ async function renderAndCapture(
         text: el.textContent?.trim().slice(0, 200) || "",
         childCount: el.children.length,
         attributes: Array.from(el.attributes).reduce(
-          (acc, attr) => ({ ...acc, [attr.name]: attr.value }),
+          (acc: Record<string, string>, attr) => ({ ...acc, [attr.name]: attr.value }),
           {} as Record<string, string>
         ),
         computedStyles: {
@@ -131,20 +134,10 @@ async function renderAndCapture(
           boxShadow: computed.boxShadow,
         },
       };
-    }
-
-    interface ElementInfo {
-      tag: string;
-      id?: string;
-      classes: string[];
-      text: string;
-      childCount: number;
-      attributes: Record<string, string>;
-      computedStyles: Record<string, string>;
-    }
+    };
 
     const allElements = document.body.querySelectorAll("*");
-    const elements: ElementInfo[] = Array.from(allElements).map(getElementInfo);
+    const elements = Array.from(allElements).map(getElementInfo);
 
     return {
       title: document.title,
