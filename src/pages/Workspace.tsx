@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { useParams, Link } from "react-router-dom";
 import Editor from "@monaco-editor/react";
 import {
@@ -26,6 +26,7 @@ import TestCasePanel from "@/components/workspace/TestCasePanel";
 import ResultPanel from "@/components/workspace/ResultPanel";
 import PreviewFrame from "@/components/workspace/PreviewFrame";
 import { courses } from "@/data/courses";
+import { getProblems, getLessonContent } from "@/lib/trainerStore";
 
 const defaultHTML = `<!DOCTYPE html>
 <html lang="en">
@@ -89,27 +90,46 @@ const HorizontalHandle = () => (
 
 const Workspace = () => {
   const { lessonId } = useParams();
+
+  // Check if this lesson is a trainer-created problem
+  const trainerProblem = useMemo(() => {
+    if (!lessonId) return null;
+    return getProblems().find((p) => p.id === lessonId) ?? null;
+  }, [lessonId]);
+
+  // Check if this syllabus lesson has trainer curriculum override
+  const lessonContent = useMemo(() => {
+    if (!lessonId || trainerProblem) return null;
+    return getLessonContent(lessonId);
+  }, [lessonId, trainerProblem]);
+
+  // Priority: trainer problem > lesson content override > defaults
+  const initHtml = trainerProblem?.starterHtml ?? lessonContent?.starterHtml ?? defaultHTML;
+  const initCss  = trainerProblem?.starterCss  ?? lessonContent?.starterCss  ?? defaultCSS;
+  const initJs   = trainerProblem?.starterJs   ?? lessonContent?.starterJs   ?? defaultJS;
+
   const [activeTab, setActiveTab] = useState("html");
   const [rightTab, setRightTab] = useState<RightTab>("Problem");
   const [submitted, setSubmitted] = useState(false);
   const [explorerOpen, setExplorerOpen] = useState(true);
 
-  const [htmlCode, setHtmlCode] = useState(defaultHTML);
-  const [cssCode, setCssCode] = useState(defaultCSS);
-  const [jsCode, setJsCode] = useState(defaultJS);
+  const [htmlCode, setHtmlCode] = useState(initHtml);
+  const [cssCode, setCssCode] = useState(initCss);
+  const [jsCode, setJsCode] = useState(initJs);
 
-  const [previewHtml, setPreviewHtml] = useState(defaultHTML);
-  const [previewCss, setPreviewCss] = useState(defaultCSS);
-  const [previewJs, setPreviewJs] = useState(defaultJS);
+  const [previewHtml, setPreviewHtml] = useState(initHtml);
+  const [previewCss, setPreviewCss] = useState(initCss);
+  const [previewJs, setPreviewJs] = useState(initJs);
 
-  // Find lesson title
+  // Find lesson title — use trainer problem title if available
   let lessonTitle = "Lesson";
-  for (const course of courses) {
-    for (const level of course.levels) {
-      const found = level.lessons.find((l) => l.id === lessonId);
-      if (found) {
-        lessonTitle = found.title;
-        break;
+  if (trainerProblem) {
+    lessonTitle = trainerProblem.title;
+  } else {
+    for (const course of courses) {
+      for (const level of course.levels) {
+        const found = level.lessons.find((l) => l.id === lessonId);
+        if (found) { lessonTitle = found.title; break; }
       }
     }
   }
@@ -140,9 +160,9 @@ const Workspace = () => {
   };
 
   const handleReset = () => {
-    setHtmlCode(defaultHTML);
-    setCssCode(defaultCSS);
-    setJsCode(defaultJS);
+    setHtmlCode(initHtml);
+    setCssCode(initCss);
+    setJsCode(initJs);
     setSubmitted(false);
   };
 
@@ -287,7 +307,7 @@ const Workspace = () => {
                 ))}
               </div>
               <div className="flex-1 overflow-auto">
-                {rightTab === "Problem" && <ProblemPanel lessonTitle={lessonTitle} />}
+                {rightTab === "Problem" && <ProblemPanel lessonTitle={lessonTitle} lessonId={lessonId} />}
                 {rightTab === "Tests" && <TestCasePanel />}
                 {rightTab === "Results" && <ResultPanel submitted={submitted} />}
               </div>

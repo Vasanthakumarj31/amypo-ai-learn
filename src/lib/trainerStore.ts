@@ -37,10 +37,26 @@ export interface Submission {
   timeSpent: number; // minutes
 }
 
+/**
+ * Trainer-authored content for an individual syllabus lesson.
+ * Stored by lessonId; overrides the default workspace content.
+ */
+export interface LessonContent {
+  lessonId: string;
+  task: string;           // task / question description shown to student
+  referenceImageUrl: string; // base64 data URL of uploaded reference image
+  starterHtml: string;
+  starterCss: string;
+  starterJs: string;
+  updatedAt: string;
+}
+
 // ─── Storage Keys ─────────────────────────────────────────────────────────────
 const PROBLEMS_KEY = "amypo_problems";
 const STUDENTS_KEY = "amypo_students";
 const SUBMISSIONS_KEY = "amypo_submissions";
+const LESSON_CONTENT_KEY = "amypo_lesson_content";
+
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const uid = () => Math.random().toString(36).slice(2, 10);
@@ -270,3 +286,25 @@ export function studentTopicScores(studentId: string): Record<Topic, number> {
     JavaScript: grouped.JavaScript.length ? Math.round(grouped.JavaScript.reduce((a, b) => a + b, 0) / grouped.JavaScript.length) : 0,
   };
 }
+
+// ─── CRUD – Lesson Content Overrides ─────────────────────────────────────────
+function getAllLessonContent(): Record<string, LessonContent> {
+  return JSON.parse(localStorage.getItem(LESSON_CONTENT_KEY) || "{}");
+}
+
+export function getLessonContent(lessonId: string): LessonContent | null {
+  return getAllLessonContent()[lessonId] ?? null;
+}
+
+export function saveLessonContent(content: LessonContent) {
+  const all = getAllLessonContent();
+  all[content.lessonId] = content;
+  localStorage.setItem(LESSON_CONTENT_KEY, JSON.stringify(all));
+}
+
+export function clearLessonContent(lessonId: string) {
+  const all = getAllLessonContent();
+  delete all[lessonId];
+  localStorage.setItem(LESSON_CONTENT_KEY, JSON.stringify(all));
+}
+

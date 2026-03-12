@@ -7,12 +7,14 @@ import {
   BarChart2,
   LogOut,
   GraduationCap,
+  Layers,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { logoutTrainer, getTrainerSession } from "@/lib/trainerAuth";
 
 const links = [
   { to: "/trainer", label: "Overview", icon: LayoutDashboard, end: true },
+  { to: "/trainer/curriculum", label: "Curriculum", icon: Layers },
   { to: "/trainer/problems", label: "Problems", icon: BookOpen },
   { to: "/trainer/students", label: "Students", icon: Users },
   { to: "/trainer/submissions", label: "Submissions", icon: FileText },
