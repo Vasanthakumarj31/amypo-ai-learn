@@ -10,6 +10,10 @@ import {
   Terminal,
   Sparkles,
   Zap,
+  GraduationCap,
+  BarChart2,
+  BookOpen,
+  Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -76,6 +80,10 @@ const LandingPage = () => {
             </a>
             <Link to="/login" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
               Login
+            </Link>
+            <Link to="/trainer/login" className="flex items-center gap-1.5 text-sm text-primary/80 transition-colors hover:text-primary font-medium">
+              <GraduationCap className="h-4 w-4" />
+              Trainer
             </Link>
           </nav>
 
@@ -254,33 +262,97 @@ const LandingPage = () => {
             </p>
           </motion.div>
 
-          <div className="grid gap-6 md:grid-cols-3">
+          <div className="flex justify-center">
+            <motion.div
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              variants={fadeUp}
+              custom={0}
+              className="group w-full max-w-2xl rounded-2xl border border-border/50 bg-card/50 p-10 text-center backdrop-blur-sm card-hover"
+            >
+              <h3 className="mb-3 text-3xl font-extrabold bg-gradient-to-r from-orange-500 via-yellow-400 to-blue-500 bg-clip-text text-transparent">
+                Frontend Web Development
+              </h3>
+              <p className="text-sm text-muted-foreground mb-2">HTML + CSS + JavaScript • Beginner to Advanced</p>
+              <div className="flex flex-wrap justify-center gap-2 mb-6 text-xs text-muted-foreground">
+                {["Level 1: Web Basics", "Level 2: Page Structure", "Level 3: Responsive Design", "Level 4: DOM & Interactivity", "Level 5: Advanced JS", "Level 6: Pro Skills", "Level 7: React.js"].map((lvl) => (
+                  <span key={lvl} className="rounded-full border border-border/50 px-3 py-1 bg-secondary/50">{lvl}</span>
+                ))}
+              </div>
+              <p className="text-sm text-muted-foreground mb-6">7 levels • 70+ lessons • Real-world projects</p>
+              <Link to="/dashboard" className="inline-block">
+                <Button variant="outline" size="sm" className="border-border/50 text-foreground hover:bg-primary/10 hover:border-primary/30 hover:text-primary transition-all duration-300">
+                  Explore
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </Button>
+              </Link>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* Trainer Section */}
+      <section id="trainer" className="border-t border-border/30 py-32 relative">
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-primary/[0.04] to-transparent" />
+        <div className="container relative">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="mb-12 text-center"
+          >
+            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-xs font-medium text-primary">
+              <GraduationCap className="h-3.5 w-3.5" />
+              FOR EDUCATORS
+            </div>
+            <h2 className="text-4xl font-bold md:text-5xl">
+              Powerful <span className="gradient-text">Trainer Dashboard</span>
+            </h2>
+            <p className="mt-4 text-lg text-muted-foreground max-w-xl mx-auto">
+              A complete management hub for educators — create problems, review student code, and track every learner's progress.
+            </p>
+          </motion.div>
+
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4 mb-10">
             {[
-              { title: "HTML", gradient: "from-orange-500 to-red-500", lessons: 24 },
-              { title: "CSS", gradient: "from-blue-500 to-purple-500", lessons: 30 },
-              { title: "JavaScript", gradient: "from-yellow-400 to-orange-500", lessons: 36 },
-            ].map((course, i) => (
+              { icon: BookOpen, title: "Problem Bank", desc: "Add HTML, CSS & JS problems with starter code and expected outputs.", gradient: "from-orange-500 to-red-500" },
+              { icon: Users, title: "Student Management", desc: "View every student's profile, code submissions, and topic-level scores.", gradient: "from-blue-500 to-cyan-500" },
+              { icon: BarChart2, title: "Performance Tracking", desc: "Identify weak topics per student and overall class performance.", gradient: "from-purple-500 to-pink-500" },
+              { icon: Eye, title: "Code Review", desc: "Review student code directly in the dashboard using Monaco editor.", gradient: "from-emerald-500 to-teal-500" },
+            ].map((item, i) => (
               <motion.div
-                key={course.title}
+                key={item.title}
                 custom={i}
                 initial="hidden"
                 whileInView="visible"
                 viewport={{ once: true }}
                 variants={fadeUp}
-                className="group rounded-2xl border border-border/50 bg-card/50 p-10 text-center backdrop-blur-sm card-hover"
+                className="rounded-2xl border border-border/50 bg-card/50 p-6 backdrop-blur-sm card-hover"
               >
-                <h3 className={`mb-3 text-3xl font-extrabold bg-gradient-to-r ${course.gradient} bg-clip-text text-transparent`}>
-                  {course.title}
-                </h3>
-                <p className="text-sm text-muted-foreground">{course.lessons} lessons • 3 levels</p>
-                <Link to="/dashboard" className="mt-6 inline-block">
-                  <Button variant="outline" size="sm" className="border-border/50 text-foreground hover:bg-primary/10 hover:border-primary/30 hover:text-primary transition-all duration-300">
-                    Explore
-                    <ArrowRight className="h-3.5 w-3.5" />
-                  </Button>
-                </Link>
+                <div className={`mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${item.gradient}`}>
+                  <item.icon className="h-5 w-5 text-white" />
+                </div>
+                <h3 className="mb-1.5 font-semibold text-foreground">{item.title}</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">{item.desc}</p>
               </motion.div>
             ))}
+          </div>
+
+          <div className="text-center">
+            <Link to="/trainer/login">
+              <motion.button
+                initial={{ opacity: 0, y: 10 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-primary to-accent px-8 py-3 text-sm font-semibold text-white shadow-xl shadow-primary/30 hover:shadow-primary/50 transition-all duration-300 hover:scale-105"
+              >
+                <GraduationCap className="h-4 w-4" />
+                Open Trainer Dashboard
+                <ArrowRight className="h-4 w-4" />
+              </motion.button>
+            </Link>
+            <p className="mt-3 text-xs text-muted-foreground">Default: admin@amypo.com / amypo123</p>
           </div>
         </div>
       </section>

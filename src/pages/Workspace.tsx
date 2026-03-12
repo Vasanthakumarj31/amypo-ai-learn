@@ -2,6 +2,11 @@ import { useState, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
 import Editor from "@monaco-editor/react";
 import {
+  PanelGroup,
+  Panel,
+  PanelResizeHandle,
+} from "react-resizable-panels";
+import {
   Code2,
   Play,
   Send,
@@ -10,6 +15,8 @@ import {
   FileCode,
   Folder,
   ChevronRight,
+  GripVertical,
+  GripHorizontal,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -62,12 +69,29 @@ const fileTree = [
   { name: "script.js", tab: "js" },
 ];
 
+// Drag handle for vertical splits (left-right)
+const VerticalHandle = () => (
+  <PanelResizeHandle className="group relative flex w-1.5 items-center justify-center bg-border hover:bg-primary/50 transition-colors duration-150 cursor-col-resize">
+    <div className="z-10 flex h-8 w-4 items-center justify-center rounded-sm bg-border group-hover:bg-primary/70 transition-colors">
+      <GripVertical className="h-3 w-3 text-muted-foreground group-hover:text-primary-foreground" />
+    </div>
+  </PanelResizeHandle>
+);
+
+// Drag handle for horizontal splits (top-bottom)
+const HorizontalHandle = () => (
+  <PanelResizeHandle className="group relative flex h-1.5 items-center justify-center bg-border hover:bg-primary/50 transition-colors duration-150 cursor-row-resize">
+    <div className="z-10 flex h-4 w-8 items-center justify-center rounded-sm bg-border group-hover:bg-primary/70 transition-colors">
+      <GripHorizontal className="h-3 w-3 text-muted-foreground group-hover:text-primary-foreground" />
+    </div>
+  </PanelResizeHandle>
+);
+
 const Workspace = () => {
   const { lessonId } = useParams();
   const [activeTab, setActiveTab] = useState("html");
   const [rightTab, setRightTab] = useState<RightTab>("Problem");
   const [submitted, setSubmitted] = useState(false);
-  const [showPreview, setShowPreview] = useState(true);
   const [explorerOpen, setExplorerOpen] = useState(true);
 
   const [htmlCode, setHtmlCode] = useState(defaultHTML);
@@ -107,7 +131,6 @@ const Workspace = () => {
     setPreviewHtml(htmlCode);
     setPreviewCss(cssCode);
     setPreviewJs(jsCode);
-    setShowPreview(true);
   };
 
   const handleSubmit = () => {
@@ -126,7 +149,7 @@ const Workspace = () => {
   return (
     <div className="flex h-screen flex-col bg-background">
       {/* Top bar */}
-      <header className="flex h-12 items-center justify-between border-b border-border bg-card/50 px-4">
+      <header className="flex h-12 shrink-0 items-center justify-between border-b border-border bg-card/50 px-4">
         <div className="flex items-center gap-3">
           <Link to="/dashboard" className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors">
             <ChevronLeft className="h-4 w-4" />
@@ -139,6 +162,9 @@ const Workspace = () => {
         </div>
 
         <div className="flex items-center gap-2">
+          <span className="hidden text-xs text-muted-foreground sm:block">
+            Drag the dividers to resize panels
+          </span>
           <Button size="sm" variant="outline" onClick={handleReset} className="gap-1.5 border-border text-muted-foreground hover:bg-secondary hover:text-foreground">
             <RotateCcw className="h-3.5 w-3.5" />
             Reset
@@ -154,9 +180,10 @@ const Workspace = () => {
         </div>
       </header>
 
+      {/* Main resizable layout */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Explorer */}
-        <div className={cn("border-r border-border bg-card/30 transition-all", explorerOpen ? "w-48" : "w-10")}>
+        {/* File Explorer (collapsible, non-resizable sidebar) */}
+        <div className={cn("shrink-0 border-r border-border bg-card/30 transition-all duration-200", explorerOpen ? "w-44" : "w-10")}>
           <button
             onClick={() => setExplorerOpen(!explorerOpen)}
             className="flex h-8 w-full items-center gap-1 px-3 text-xs text-muted-foreground hover:text-foreground"
@@ -190,67 +217,85 @@ const Workspace = () => {
           )}
         </div>
 
-        {/* Center: Editor */}
-        <div className="flex flex-1 flex-col">
-          <EditorTabs activeTab={activeTab} onTabChange={setActiveTab} />
-          <div className="flex-1">
-            <Editor
-              theme="vs-dark"
-              language={language}
-              value={currentCode}
-              onChange={setCurrentCode}
-              options={{
-                fontSize: 14,
-                fontFamily: "'JetBrains Mono', monospace",
-                minimap: { enabled: false },
-                lineNumbers: "on",
-                scrollBeyondLastLine: false,
-                renderWhitespace: "selection",
-                tabSize: 2,
-                automaticLayout: true,
-                padding: { top: 12 },
-              }}
-            />
-          </div>
-        </div>
+        {/* Outer horizontal PanelGroup (editor+preview | right panel) */}
+        <PanelGroup direction="horizontal" className="flex-1">
 
-        {/* Right: Evaluation */}
-        <div className="flex w-80 flex-col border-l border-border bg-card/30">
-          <div className="flex border-b border-border">
-            {rightTabs.map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setRightTab(tab)}
-                className={cn(
-                  "flex-1 px-3 py-2.5 text-xs font-medium transition-colors border-b-2",
-                  rightTab === tab
-                    ? "border-primary text-foreground"
-                    : "border-transparent text-muted-foreground hover:text-foreground"
-                )}
-              >
-                {tab}
-              </button>
-            ))}
-          </div>
-          <div className="flex-1 overflow-auto">
-            {rightTab === "Problem" && <ProblemPanel lessonTitle={lessonTitle} />}
-            {rightTab === "Tests" && <TestCasePanel />}
-            {rightTab === "Results" && <ResultPanel submitted={submitted} />}
-          </div>
-        </div>
+          {/* Left column: Editor (top) + Preview (bottom) — vertical split */}
+          <Panel defaultSize={65} minSize={30}>
+            <PanelGroup direction="vertical">
+              {/* Editor */}
+              <Panel defaultSize={60} minSize={20}>
+                <div className="flex h-full flex-col">
+                  <EditorTabs activeTab={activeTab} onTabChange={setActiveTab} />
+                  <div className="flex-1">
+                    <Editor
+                      theme="vs-dark"
+                      language={language}
+                      value={currentCode}
+                      onChange={setCurrentCode}
+                      options={{
+                        fontSize: 14,
+                        fontFamily: "'JetBrains Mono', monospace",
+                        minimap: { enabled: false },
+                        lineNumbers: "on",
+                        scrollBeyondLastLine: false,
+                        renderWhitespace: "selection",
+                        tabSize: 2,
+                        automaticLayout: true,
+                        padding: { top: 12 },
+                      }}
+                    />
+                  </div>
+                </div>
+              </Panel>
+
+              <HorizontalHandle />
+
+              {/* Live Preview */}
+              <Panel defaultSize={40} minSize={10}>
+                <div className="flex h-full flex-col">
+                  <div className="flex h-8 shrink-0 items-center border-b border-border bg-card/50 px-4">
+                    <span className="text-xs font-medium text-muted-foreground">🖥 Live Preview</span>
+                  </div>
+                  <div className="flex-1 overflow-hidden">
+                    <PreviewFrame html={previewHtml} css={previewCss} js={previewJs} />
+                  </div>
+                </div>
+              </Panel>
+            </PanelGroup>
+          </Panel>
+
+          <VerticalHandle />
+
+          {/* Right panel: Problem / Tests / Results */}
+          <Panel defaultSize={35} minSize={20}>
+            <div className="flex h-full flex-col border-l border-border bg-card/30">
+              <div className="flex border-b border-border">
+                {rightTabs.map((tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => setRightTab(tab)}
+                    className={cn(
+                      "flex-1 px-3 py-2.5 text-xs font-medium transition-colors border-b-2",
+                      rightTab === tab
+                        ? "border-primary text-foreground"
+                        : "border-transparent text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    {tab}
+                  </button>
+                ))}
+              </div>
+              <div className="flex-1 overflow-auto">
+                {rightTab === "Problem" && <ProblemPanel lessonTitle={lessonTitle} />}
+                {rightTab === "Tests" && <TestCasePanel />}
+                {rightTab === "Results" && <ResultPanel submitted={submitted} />}
+              </div>
+            </div>
+          </Panel>
+
+        </PanelGroup>
       </div>
-
-      {/* Bottom: Preview */}
-      {showPreview && (
-        <div className="h-64 border-t border-border">
-          <div className="flex h-8 items-center border-b border-border bg-card/50 px-4">
-            <span className="text-xs font-medium text-muted-foreground">Live Preview</span>
-          </div>
-          <div className="h-[calc(100%-2rem)]">
-            <PreviewFrame html={previewHtml} css={previewCss} js={previewJs} />
-          </div>
-        </div>
-      )}
     </div>
   );
 };

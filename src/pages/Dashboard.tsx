@@ -1,6 +1,6 @@
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ChevronRight, BookOpen, Sparkles } from "lucide-react";
+import { ChevronRight, BookOpen, Sparkles, FolderCode } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import DashboardSidebar from "@/components/DashboardSidebar";
@@ -31,30 +31,34 @@ const Dashboard = () => {
         <div className="p-8">
           {/* Stats */}
           {!courseFilter && (
-            <div className="mb-10 grid gap-5 sm:grid-cols-3">
+            <div className="mb-10 flex justify-center">
               {courses.map((course, idx) => {
                 const avg = Math.round(
                   course.levels.reduce((s, l) => s + l.progress, 0) / course.levels.length
                 );
-                const gradients = [
-                  "from-orange-500 to-red-500",
-                  "from-blue-500 to-purple-500",
-                  "from-yellow-400 to-orange-500",
-                ];
                 return (
                   <motion.div
                     key={course.id}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: idx * 0.1, duration: 0.5 }}
-                    className="rounded-2xl border border-border/50 bg-card/50 p-6 card-hover backdrop-blur-sm"
+                    className="w-full max-w-md rounded-2xl border border-border/50 bg-card/50 p-6 card-hover backdrop-blur-sm"
                   >
                     <div className="mb-3 flex items-center justify-between">
                       <span className="text-2xl">{course.icon}</span>
-                      <span className={`text-sm font-bold bg-gradient-to-r ${gradients[idx]} bg-clip-text text-transparent`}>{avg}%</span>
+                      <span className="text-sm font-bold bg-gradient-to-r from-orange-500 via-yellow-400 to-blue-500 bg-clip-text text-transparent">
+                        {avg}%
+                      </span>
                     </div>
                     <h3 className="font-semibold text-foreground">{course.title}</h3>
-                    <Progress value={avg} className="mt-3 h-2 bg-secondary [&>div]:bg-gradient-to-r [&>div]:from-primary [&>div]:to-accent" />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {course.levels.length} levels •{" "}
+                      {course.levels.reduce((s, l) => s + l.lessons.length, 0)} lessons
+                    </p>
+                    <Progress
+                      value={avg}
+                      className="mt-3 h-2 bg-secondary [&>div]:bg-gradient-to-r [&>div]:from-orange-500 [&>div]:via-yellow-400 [&>div]:to-blue-500"
+                    />
                   </motion.div>
                 );
               })}
@@ -74,11 +78,19 @@ const Dashboard = () => {
 
               {course.levels.map((level) => (
                 <div key={level.name} className="mb-8">
-                  <div className="mb-3 flex items-center justify-between">
+                  <div className="mb-3 flex items-center justify-between flex-wrap gap-2">
                     <h3 className="text-xs font-semibold uppercase tracking-widest text-primary/70">
                       {level.name}
                     </h3>
-                    <span className="text-xs text-muted-foreground">{level.progress}% complete</span>
+                    <div className="flex items-center gap-3 flex-wrap">
+                      {level.project && (
+                        <span className="flex items-center gap-1 text-xs text-muted-foreground border border-border/50 rounded-full px-3 py-1 bg-secondary/30">
+                          <FolderCode className="h-3 w-3" />
+                          Project: {level.project}
+                        </span>
+                      )}
+                      <span className="text-xs text-muted-foreground">{level.progress}% complete</span>
+                    </div>
                   </div>
 
                   <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -93,7 +105,9 @@ const Dashboard = () => {
                       >
                         <div className="mb-2 flex items-center gap-2">
                           <BookOpen className="h-4 w-4 text-primary" />
-                          <span className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">{lesson.title}</span>
+                          <span className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">
+                            {lesson.title}
+                          </span>
                         </div>
                         <p className="mb-4 text-xs text-muted-foreground line-clamp-2 leading-relaxed">
                           {lesson.description}

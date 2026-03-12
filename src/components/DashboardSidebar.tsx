@@ -3,8 +3,6 @@ import {
   Code2,
   LayoutDashboard,
   FileCode,
-  Palette,
-  Braces,
   BarChart3,
   Settings,
   LogOut,
@@ -13,9 +11,7 @@ import { cn } from "@/lib/utils";
 
 const navItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/dashboard" },
-  { icon: FileCode, label: "HTML Course", path: "/dashboard?course=html" },
-  { icon: Palette, label: "CSS Course", path: "/dashboard?course=css" },
-  { icon: Braces, label: "JS Course", path: "/dashboard?course=javascript" },
+  { icon: FileCode, label: "Frontend Course", path: "/dashboard?course=frontend" },
   { icon: BarChart3, label: "Progress", path: "/dashboard?view=progress" },
   { icon: Settings, label: "Settings", path: "/dashboard?view=settings" },
 ];
