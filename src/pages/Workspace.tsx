@@ -17,7 +17,9 @@ import {
   ChevronRight,
   GripVertical,
   GripHorizontal,
+  Maximize2,
 } from "lucide-react";
+import { Dialog, DialogContent, DialogTrigger, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import EditorTabs from "@/components/workspace/EditorTabs";
@@ -318,8 +320,21 @@ const Workspace = () => {
               {/* Live Preview */}
               <Panel defaultSize={40} minSize={10}>
                 <div className="flex h-full flex-col">
-                  <div className="flex h-8 shrink-0 items-center border-b border-border bg-card/50 px-4">
+                  <div className="flex h-8 shrink-0 items-center justify-between border-b border-border bg-card/50 px-4">
                     <span className="text-xs font-medium text-muted-foreground">🖥 Live Preview</span>
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <button className="text-muted-foreground hover:text-foreground transition-colors p-1 rounded-sm hover:bg-secondary/80">
+                          <Maximize2 className="h-3.5 w-3.5" />
+                        </button>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-[95vw] w-full max-h-[95vh] h-full p-2 bg-background border border-border flex flex-col gap-2">
+                        <DialogTitle className="text-sm font-medium border-b border-border/50 pb-2">Desktop Live Preview</DialogTitle>
+                        <div className="flex-1 overflow-hidden rounded-md border border-border/30 shadow-inner">
+                          <PreviewFrame html={previewHtml} css={previewCss} js={previewJs} />
+                        </div>
+                      </DialogContent>
+                    </Dialog>
                   </div>
                   <div className="flex-1 overflow-hidden">
                     <PreviewFrame html={previewHtml} css={previewCss} js={previewJs} />

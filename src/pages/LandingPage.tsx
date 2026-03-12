@@ -78,21 +78,7 @@ const LandingPage = () => {
             <a href="#courses" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
               Courses
             </a>
-            <Link to="/login" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
-              Login
-            </Link>
-            <Link to="/trainer/login" className="flex items-center gap-1.5 text-sm text-primary/80 transition-colors hover:text-primary font-medium">
-              <GraduationCap className="h-4 w-4" />
-              Trainer
-            </Link>
           </nav>
-
-          <Link to="/login">
-            <Button size="sm" className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg shadow-primary/25 transition-all duration-300 hover:shadow-primary/40">
-              Get started
-              <ArrowRight className="h-3.5 w-3.5" />
-            </Button>
-          </Link>
         </div>
       </header>
 
@@ -143,18 +129,18 @@ const LandingPage = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.6, duration: 0.5 }}
-              className="mt-12 flex flex-col items-center gap-4 sm:flex-row sm:justify-center"
+              className="mt-12 flex flex-col items-center gap-4 sm:flex-row sm:justify-center flex-wrap"
             >
               <Link to="/dashboard">
-                <Button size="lg" className="gap-2 bg-primary px-10 text-primary-foreground shadow-xl shadow-primary/30 hover:bg-primary/90 hover:shadow-primary/50 transition-all duration-300 hover:scale-105 text-base h-12">
-                  Get Started Free
-                  <ArrowRight className="h-4 w-4" />
+                <Button size="lg" className="gap-2 bg-primary px-10 text-primary-foreground shadow-xl shadow-primary/30 hover:bg-primary/90 hover:shadow-primary/50 transition-all duration-300 hover:scale-105 text-base h-12 w-full sm:w-auto">
+                  <Terminal className="h-4 w-4" />
+                  Student Workspace
                 </Button>
               </Link>
-              <Link to="/login">
-                <Button size="lg" variant="outline" className="gap-2 border-border/50 px-10 text-foreground hover:bg-secondary hover:border-primary/30 transition-all duration-300 text-base h-12">
-                  <Terminal className="h-4 w-4" />
-                  Student Login
+              <Link to="/trainer/dashboard">
+                <Button size="lg" variant="outline" className="gap-2 border-border/50 px-10 text-foreground hover:bg-secondary hover:border-primary/30 transition-all duration-300 text-base h-12 w-full sm:w-auto">
+                  <GraduationCap className="h-4 w-4" />
+                  Trainer Dashboard
                 </Button>
               </Link>
             </motion.div>
@@ -292,70 +278,7 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* Trainer Section */}
-      <section id="trainer" className="border-t border-border/30 py-32 relative">
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-primary/[0.04] to-transparent" />
-        <div className="container relative">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="mb-12 text-center"
-          >
-            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-xs font-medium text-primary">
-              <GraduationCap className="h-3.5 w-3.5" />
-              FOR EDUCATORS
-            </div>
-            <h2 className="text-4xl font-bold md:text-5xl">
-              Powerful <span className="gradient-text">Trainer Dashboard</span>
-            </h2>
-            <p className="mt-4 text-lg text-muted-foreground max-w-xl mx-auto">
-              A complete management hub for educators — create problems, review student code, and track every learner's progress.
-            </p>
-          </motion.div>
 
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4 mb-10">
-            {[
-              { icon: BookOpen, title: "Problem Bank", desc: "Add HTML, CSS & JS problems with starter code and expected outputs.", gradient: "from-orange-500 to-red-500" },
-              { icon: Users, title: "Student Management", desc: "View every student's profile, code submissions, and topic-level scores.", gradient: "from-blue-500 to-cyan-500" },
-              { icon: BarChart2, title: "Performance Tracking", desc: "Identify weak topics per student and overall class performance.", gradient: "from-purple-500 to-pink-500" },
-              { icon: Eye, title: "Code Review", desc: "Review student code directly in the dashboard using Monaco editor.", gradient: "from-emerald-500 to-teal-500" },
-            ].map((item, i) => (
-              <motion.div
-                key={item.title}
-                custom={i}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true }}
-                variants={fadeUp}
-                className="rounded-2xl border border-border/50 bg-card/50 p-6 backdrop-blur-sm card-hover"
-              >
-                <div className={`mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${item.gradient}`}>
-                  <item.icon className="h-5 w-5 text-white" />
-                </div>
-                <h3 className="mb-1.5 font-semibold text-foreground">{item.title}</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">{item.desc}</p>
-              </motion.div>
-            ))}
-          </div>
-
-          <div className="text-center">
-            <Link to="/trainer/login">
-              <motion.button
-                initial={{ opacity: 0, y: 10 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-primary to-accent px-8 py-3 text-sm font-semibold text-white shadow-xl shadow-primary/30 hover:shadow-primary/50 transition-all duration-300 hover:scale-105"
-              >
-                <GraduationCap className="h-4 w-4" />
-                Open Trainer Dashboard
-                <ArrowRight className="h-4 w-4" />
-              </motion.button>
-            </Link>
-            <p className="mt-3 text-xs text-muted-foreground">Default: admin@amypo.com / amypo123</p>
-          </div>
-        </div>
-      </section>
 
       {/* Footer */}
       <footer className="border-t border-border/30 py-12">

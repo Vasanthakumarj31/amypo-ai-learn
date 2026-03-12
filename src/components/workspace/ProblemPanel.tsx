@@ -1,5 +1,6 @@
 import { useMemo } from "react";
-import { FileText, Target, Tag, Zap, ImageIcon } from "lucide-react";
+import { FileText, Target, Tag, Zap, ImageIcon, ZoomIn } from "lucide-react";
+import { Dialog, DialogContent, DialogTrigger, DialogTitle } from "@/components/ui/dialog";
 import { getProblems, getLessonContent } from "@/lib/trainerStore";
 import { cn } from "@/lib/utils";
 
@@ -90,11 +91,31 @@ const ProblemPanel = ({ lessonTitle, lessonId }: ProblemPanelProps) => {
               <ImageIcon className="h-3 w-3" />
               Reference Image
             </div>
-            <img
-              src={lessonContent.referenceImageUrl}
-              alt="Reference"
-              className="max-h-56 w-full object-contain p-2"
-            />
+            <Dialog>
+              <DialogTrigger asChild>
+                <div className="relative group cursor-pointer bg-black/5">
+                  <img
+                    src={lessonContent.referenceImageUrl}
+                    alt="Reference"
+                    className="max-h-56 w-full object-contain p-2 transition-opacity group-hover:opacity-75"
+                  />
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20">
+                    <div className="bg-background/90 text-foreground px-3 py-1.5 rounded-full text-xs font-medium flex items-center gap-1.5 shadow-sm">
+                      <ZoomIn className="h-3.5 w-3.5" />
+                      Click to expand
+                    </div>
+                  </div>
+                </div>
+              </DialogTrigger>
+              <DialogContent className="max-w-[95vw] w-fit max-h-[95vh] h-fit p-1 bg-transparent border-none shadow-none [&>button]:bg-background/80 [&>button]:hover:bg-background [&>button]:p-2 [&>button]:rounded-full">
+                <DialogTitle className="sr-only">Reference Image Focus</DialogTitle>
+                <img
+                  src={lessonContent.referenceImageUrl}
+                  alt="Reference"
+                  className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl bg-black/50"
+                />
+              </DialogContent>
+            </Dialog>
           </div>
         )}
 
@@ -128,11 +149,30 @@ const ProblemPanel = ({ lessonTitle, lessonId }: ProblemPanelProps) => {
       </div>
 
       <div className="rounded-lg border border-border bg-secondary/30 p-4">
-        <div className="flex h-28 items-center justify-center rounded border border-dashed border-border text-xs text-muted-foreground flex-col gap-1">
-          <ImageIcon className="h-5 w-5 opacity-40" />
-          <span>No reference image yet</span>
-          <span className="text-[10px] opacity-60">Trainer can upload one via Curriculum Manager</span>
-        </div>
+        <Dialog>
+          <DialogTrigger asChild>
+            <div className="relative group cursor-pointer flex h-28 items-center justify-center rounded border border-dashed border-border text-xs text-muted-foreground flex-col gap-1 transition-colors hover:bg-black/5">
+              <ImageIcon className="h-5 w-5 opacity-40 transition-opacity group-hover:opacity-10" />
+              <span className="transition-opacity group-hover:opacity-10">No reference image yet</span>
+              <span className="text-[10px] opacity-60 transition-opacity group-hover:opacity-10">Trainer can upload one via Curriculum Manager</span>
+              
+              <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="bg-background/90 text-foreground px-3 py-1.5 rounded-full text-xs font-medium flex items-center gap-1.5 shadow-sm">
+                  <ZoomIn className="h-3.5 w-3.5" />
+                  Click to expand
+                </div>
+              </div>
+            </div>
+          </DialogTrigger>
+          <DialogContent className="max-w-[95vw] w-fit max-h-[95vh] h-[95vh] p-1 bg-transparent border-none shadow-none [&>button]:bg-background/80 [&>button]:hover:bg-background [&>button]:p-2 [&>button]:rounded-full flex items-center justify-center">
+            <DialogTitle className="sr-only">No Reference Image</DialogTitle>
+            <div className="flex h-1/2 w-[80vw] mx-auto items-center justify-center rounded-lg border-2 border-dashed border-border/50 bg-black/50 text-muted-foreground flex-col gap-4 shadow-2xl backdrop-blur-sm">
+              <ImageIcon className="h-16 w-16 opacity-40" />
+              <span className="text-xl font-medium">No reference image yet</span>
+              <span className="text-sm opacity-60">The trainer has not uploaded a reference image for this lesson.</span>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
