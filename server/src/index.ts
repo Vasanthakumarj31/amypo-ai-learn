@@ -8,7 +8,18 @@ import problemRoutes from "./routes/problems.js";
 import submissionRoutes from "./routes/submissions.js";
 import lessonContentRoutes from "./routes/lessonContent.js";
 import analyticsRoutes from "./routes/analytics.js";
-import { closeBrowser } from "./services/evaluator.js";
+import trainerRoutes from "./routes/trainers.js";
+// Try Puppeteer evaluator first, fall back to lightweight evaluator
+let closeBrowser: () => Promise<void>;
+try {
+  const mod = await import("./services/evaluator.js");
+  closeBrowser = mod.closeBrowser;
+  console.log("Using Puppeteer-based evaluator");
+} catch {
+  const mod = await import("./services/lightEvaluator.js");
+  closeBrowser = mod.closeBrowser;
+  console.log("Puppeteer unavailable — using lightweight evaluator");
+}
 import { seedDatabase } from "./seed.js";
 
 const app = express();
@@ -19,7 +30,11 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 let mongoServer: MongoMemoryServer | null = null;
 
 // Middleware
-app.use(cors());
+const CORS_ORIGIN = process.env.CORS_ORIGIN || "*";
+app.use(cors({
+  origin: CORS_ORIGIN === "*" ? true : CORS_ORIGIN.split(","),
+  credentials: true,
+}));
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
@@ -29,6 +44,7 @@ app.use("/api/problems", problemRoutes);
 app.use("/api/submissions", submissionRoutes);
 app.use("/api/lesson-content", lessonContentRoutes);
 app.use("/api/analytics", analyticsRoutes);
+app.use("/api/trainers", trainerRoutes);
 
 // Health check
 app.get("/api/health", (_req, res) => {

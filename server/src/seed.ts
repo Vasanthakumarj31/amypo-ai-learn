@@ -2,6 +2,7 @@ import "dotenv/config";
 import mongoose from "mongoose";
 import Problem from "./models/Problem.js";
 import Student from "./models/Student.js";
+import Trainer, { hashPassword } from "./models/Trainer.js";
 
 const MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost:27017/amypo-ai-learn";
 
@@ -138,6 +139,24 @@ export async function seedDatabase() {
       email: "demo@amypo.com",
     });
     console.log("Created demo student.");
+  }
+
+  // Ensure default trainer exists
+  const trainerCount = await Trainer.countDocuments();
+  if (trainerCount === 0) {
+    const defaultPassword = process.env.DEFAULT_TRAINER_PASSWORD;
+    const defaultEmail = process.env.DEFAULT_TRAINER_EMAIL;
+    if (defaultPassword && defaultEmail) {
+      const hash = hashPassword(defaultPassword);
+      await Trainer.create({
+        email: defaultEmail,
+        name: "Admin Trainer",
+        passwordHash: hash,
+      });
+      console.log("Created default trainer account.");
+    } else {
+      console.log("Skipping trainer seed: set DEFAULT_TRAINER_EMAIL and DEFAULT_TRAINER_PASSWORD env vars.");
+    }
   }
 }
 
