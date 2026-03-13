@@ -2,7 +2,15 @@ import { Router, Request, Response } from "express";
 import Submission from "../models/Submission.js";
 import Problem from "../models/Problem.js";
 import LessonContent from "../models/LessonContent.js";
-import { evaluateSubmission } from "../services/evaluator.js";
+// Dynamic evaluator import — Puppeteer first, then lightweight fallback
+let evaluateSubmission: typeof import("../services/evaluator.js").evaluateSubmission;
+try {
+  const mod = await import("../services/evaluator.js");
+  evaluateSubmission = mod.evaluateSubmission;
+} catch {
+  const mod = await import("../services/lightEvaluator.js");
+  evaluateSubmission = mod.evaluateSubmission;
+}
 
 const router = Router();
 
